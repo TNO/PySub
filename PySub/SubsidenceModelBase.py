@@ -185,7 +185,7 @@ class SubsidenceModel:
     def vars_to_build(self):
         return ['reservoirs', 'timesteps', 'points', 'observation_points',
                 'dx', 'dy', 'influence_radius', 'shapes', 'bounds']
-       
+    
     def __str__(self):
         """The representation of the object as a string.
 
@@ -1529,9 +1529,6 @@ class SubsidenceModel:
             else:
                 name = 'unnamed_subsidence_model'
        
-        if self.hasattr('project_folder') and folder is not None:
-            self.project_folder.project_folder = os.path.join(folder, name)
-                    
         if folder is not None:
             project_folder = os.path.join(folder, name)
         else:
@@ -2908,20 +2905,31 @@ class SubsidenceModel:
         
         Returns
         -------
-        xr.DataSet
-            The concavity of the subsidence in m²/m for each coordinate, reservoir and timestep.
-            The dimentions of the dataset are (y, x, reservoir, time).
-            
-            The concavity over the x-axis (concavity_x) and the y-axis (concavity_y)
-            will be a part of the xarray data array.
-            
+            concavity : xr.DataSet with variables concavity, concavity_xx, 
+                concavity_xy, concavity_yx, concavity_yy. See heading Sets for 
+                more.
+                
         Sets
         ----
-        SubsidenceModel.concavity
+        SubsidenceModel.concavity : xr.DataSet
+            The concavity magnitude of the subsidence in m²/m for each coordinate and timestep.
+            The dimentions of the dataset are (y, x, time).
         SubsidenceModel.concavity_xx
+            The concavity  of the subsidence over the x axis, along the x axis 
+            in m²/m for each coordinate, reservoir and timestep.
+            The dimentions of the dataset are (y, x, reservoir, time).
         SubsidenceModel.concavity_xy
+            The concavity  of the subsidence over the x axis, along the y axis 
+            in m²/m for each coordinate, reservoir and timestep.
+            The dimentions of the dataset are (y, x, reservoir, time).
         SubsidenceModel.concavity_yx
+            The concavity  of the subsidence over the y axis, along the x axis 
+            in m²/m for each coordinate, reservoir and timestep.
+            The dimentions of the dataset are (y, x, reservoir, time).
         SubsidenceModel.concavity_yy
+            The concavity  of the subsidence over the y axis, along the y axis 
+            in m²/m for each coordinate, reservoir and timestep.
+            The dimentions of the dataset are (y, x, reservoir, time).
         """
         if _print: print(f'Calculating subsidence concavity, model: {self.name}')
         _reservoir = _plot_utils.reservoir_entry_to_index(self, reservoir)
@@ -2992,16 +3000,17 @@ class SubsidenceModel:
                 ).transpose('y', 'x', 'time', ...
                 )
                             
-            self.grid['concavity'] = np.sqrt( 
-                self.grid['concavity_xx']**2 + 
-                self.grid['concavity_xy']**2 + 
-                self.grid['concavity_yx']**2 + 
-                self.grid['concavity_yy']**2
+            self.grid['concavity'] = np.linalg.norm( 
+                self.grid['concavity_xx'].sum('reservoir'),
+                self.grid['concavity_xy'].sum('reservoir'), 
+                self.grid['concavity_yx'].sum('reservoir'), 
+                self.grid['concavity_yy'].sum('reservoir'),
+                axis = 0,
                 )
         
         if _print: print(f'Calculated subsidence concavity, model: {self.name}')
 
-        return self.grid['concavity']
+        return self.grid[['concavity', 'concavity_xx', 'concavity_xy', 'concavity_yx', 'concavity_yy']]
         
     
     def calculate_subsidence_rate(self, _print = True):
