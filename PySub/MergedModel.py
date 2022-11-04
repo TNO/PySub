@@ -23,12 +23,7 @@ class MergedModel(_SubsidenceModelBase.SubsidenceModel):
             if attr.startswith('set'):
                 setattr(self, attr, MergedModelSetError)
     
-    def __getattr__(self, input):
-        if isinstance(input, str):
-            if input.startswith('set_'):
-                raise AttributeError('MergedModel object cannot set attributes.')
-            else:
-                return getattr(self, input)
+    
     
     @property
     def calc_vars(self):
@@ -44,7 +39,6 @@ class MergedModel(_SubsidenceModelBase.SubsidenceModel):
     
     def __str__(self):
         return self.name
-    
     
     def calculate_subsidence(self):
         raise Exception('MergedModel objects cannot calculate subsidence.')
@@ -82,11 +76,10 @@ class MergedModel(_SubsidenceModelBase.SubsidenceModel):
         else:
             print('Warning: No point objects have been defined in the model, or set as function parameters.')
             return
-        number_of_points = len(interpolate_points)
         x, y = zip(*interpolate_points)
         point_subsidence = []
-        for i, p in enumerate(interpolate_points):
-            point_subsidence.append(np.array(self.grid['subsidence'].interp(x = x[i], y = y[i])))
+        for _x, _y in zip(x, y):
+            point_subsidence.append(np.array(self.grid['subsidence'].interp(x = _x, y = _y)))
         point_subsidence = -np.array(point_subsidence)    
             
         if _print: print(f'Calculated subsidence at points, model: {self.name}')
@@ -146,16 +139,16 @@ def merge(list_of_models, variables = [], dx = 50, project_folder = None):
             
             for i in range(len(list_of_models) - 1):
                 if i == 0:
-                    merged = _merge(list_of_models[i], list_of_models[i+1], variables = variables, dx = dx)
+                    merged = _merge(list_of_models[i], list_of_models[i+1], variables = variables, dx = dx, project_folder = project_folder)
                 else:
-                    merged = _merge(merged, list_of_models[i+1], variables = variables, dx = dx)
-        merged.set_project_folder(project_folder)
+                    merged = _merge(merged, list_of_models[i+1], variables = variables, dx = dx, project_folder = project_folder)
+        
         return merged
     else:
         raise Exception(f'Invalid input type {type(list_of_models)}')
 
 def _merge(model1, model2, variables = [],
-          dx = 50):
+          dx = 50, project_folder = None):
     if _utils.is_number(dx):
        if dx <= 0:
            raise Exception('dx must be a number higher than 0.')
@@ -204,20 +197,41 @@ def _merge(model1, model2, variables = [],
     y = _utils.stepped_space(min_y, max_y, dx)
     
     merged_coords = {
-            'time': timesteps,
-            'x': x,
-            'y': y,
+        'time': timesteps,
+        'x': x,
+        'y': y,
             }
     
     interpolated1 = _model1.interp(
         coords = merged_coords,
-        kwargs = {'fill_value': 'extrapolate'},
+        kwargs = {'fill_value': 0},
         )
     
     interpolated2 = _model2.interp(
         coords = merged_coords,
-        kwargs = {'fill_value': 'extrapolate'},
+        kwargs = {'fill_value': 0},
         )
+    
+    time_interpolated1 = interpolated1.interp(
+        coords = {'time': timesteps},
+        kwargs = {'fill_value': 0},
+        )
+    
+    time_interpolated2 = interpolated2.interp(
+        coords = {'time': timesteps},
+        kwargs = {'fill_value': (interpolated2.isel(time = -1).values())},
+        )
+    
+    interpolated1 = xr.where(time_interpolated1.time > _model1.time[-1], 
+                             interpolated1.sel(
+                                 time = _model1.time[-1]),
+                             time_interpolated1)
+    
+    interpolated2 = xr.where(time_interpolated2.time > _model2.time[-1], 
+                             interpolated2.sel(
+                                 time = _model2.time[-1]),
+                             time_interpolated2)
+    
     to_merge = [interpolated1, interpolated2]
     
     unique_variables = np.unique([list(_model1.var())+ 
