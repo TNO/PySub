@@ -12,7 +12,7 @@ from matplotlib import cm
 from matplotlib.patches import Polygon, Patch
 from matplotlib.lines import Line2D
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
-import cartopy.crs as ccrs
+from cartopy import crs as ccrs
 import xml
 from PySub import utils as _utils
 from PySub.WMTS_utils import OpenTopoAchtergrondKaart, BrtAchtergrondKaart, LuchtFoto, WMTS, other_WMTS
@@ -285,11 +285,7 @@ def add_background(ax = None, basemap = True, service = 'opentopo', layer = 'ope
             warn("Warning: No connection with WMTS/EPSG, failed to plot a map.")
 
 def get_crs(epsg):
-    try:
-        crs = ccrs.epsg(epsg)
-    except xml.etree.ElementTree.ParseError:
-        warn('CRS not available')
-        crs = None
+    crs = ccrs.epsg(epsg)
     return crs
 
 def get_background(extent, fig = None, ax = None, basemap = True, service = 'opentopo', layer = 'opentopoachtergrondkaart', figsize=(8, 8), epsg = 28992):

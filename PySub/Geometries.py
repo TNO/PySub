@@ -176,11 +176,10 @@ class _crs():
         
     def check(self, crs):
         if self.crs is None:
-            self.crs = osr.SpatialReference(wkt = crs)
+            self.crs = crs
         else:
             if not self.crs is None:
-                wkt_crs = osr.SpatialReference(wkt = crs)
-                if wkt_crs.IsSame(self.crs) != 1:
+                if self.crs != crs:
                     raise Exception(f'Sources use different coordinate reference systems: {crs} and {self.crs}')
 
 def from_representative_values(representative_parameters,
