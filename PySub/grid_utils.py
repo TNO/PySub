@@ -1,13 +1,13 @@
-import os
-
 import xarray as xr
-import fiona
 import shapely.geometry
 import numpy as np
 from PySub import utils as _utils
+from PySub import shape_utils as _shape_utils
 from matplotlib import path
-import matplotlib.pyplot as plt
-import pandas as pd
+import shapefile as shp
+from shapely.ops import cascaded_union 
+
+
 
 
 def get_mask_from_shp(xy_list, ax, ay):
@@ -33,7 +33,7 @@ def get_mask_from_shp(xy_list, ax, ay):
     """
     xy = np.array(xy_list)
     x, y = xy.T
-    poly_path = path.Path(xy)
+    poly_path = path.Path(xy) # faster then shapely in most cases
 
     xx, yy = np.meshgrid(ax, ay)
     axy = np.column_stack((xx.ravel(), yy.ravel()))
@@ -69,22 +69,21 @@ def generate_grid_from_shape(shapefile_path, dx, dy=None, timesteps = [1], reser
         # XXX Description.
 
     """
-    shp = fiona.open(shapefile_path)
-    geom_collection = []
-
-    print("nr of polygons:", len(shp))
-    print("bounds:", shp.bounds)
-    print("crs:", shp.crs_wkt)
+    shapes, crs = _shape_utils.get_shapely(shapefile_path)
+    bounds = cascaded_union(shapes).bounds
+    print("nr of polygons:", len(shapes))
+    print("bounds:", bounds)
+    print("crs:", crs)
     print("buffer:", buffer)
-
-    for s in shp:
+    geom_collection = []
+    for s in shapes:
         # print(s['properties'][mask_id])
-        geom = shapely.geometry.shape(s['geometry'])
+        geom = s.exterior.xy if hasattr(s, 'exterior') else s.xy
         geom_collection.append(geom)
 
-    grid = generate_grid_from_bounds(shp.bounds, dx, dy, timesteps = timesteps, reservoir_layers = reservoir_layers, influence_radius=buffer)
-    grid.attrs['crs'] = shp.crs_wkt
-    # grid.attrs['bounds'] = shp.bounds
+    grid = generate_grid_from_bounds(bounds, dx, dy, timesteps = timesteps, reservoir_layers = reservoir_layers, influence_radius=buffer)
+    grid.attrs['crs'] = crs
+    grid.attrs['bounds'] = bounds
 
     for i, geom in enumerate(geom_collection):
         geom_mask = get_mask_from_shp(geom, grid.x, grid.y)
@@ -213,60 +212,4 @@ def check_bounds(bounds1, bounds2):
                 check = False
     return check
     
-
-def mask_from_shapefile(grid, shapefile_path, mask_id=None, enumerate_id=False):
-    """
-    Create a layered mask data varaiable for the grid object.
-    These masks are determined based on a shapefile.
-
-    Parameters
-    ----------
-    grid : xarray Dataframe
-        # XXX Description.
-    shapefile_path : string
-        Path to the location of a .shp file.
-    mask_id : string, optional
-        The column of the data table from the shapefile over which will be masked. The default is None.
-    enumerate_id : boolean, optional
-        If True, the mask indeces will be integers based on the order of occurence in the shapefile table.
-        If False, the mask indeces will be based on the entries in the shapefile table. The default is False.
-
-    Returns
-    -------
-    grid : xarray Dataframe
-        # XXX Description.
-
-    """
-    shp = fiona.open(shapefile_path)
-    geom_collection = []
-    id_collection = []
-    mask_layers = []
-
-    if not check_bounds(shp.bounds, grid.bounds):
-        raise(Exception(f"Shapefile does not overlap with grid. \n shape bounds: {shp.bounds} \n grid bounds: {grid.bounds}"))
-    if shp.crs_wkt != grid.crs:
-        raise(Exception(f"Shape and grid CRS need to be the same. \n shape CRS: {shp.crs_wkt} \n grid CRS: {grid.crs}"))
-    
-    for i, s in enumerate(shp):
-        geom = shapely.geometry.shape(s['geometry'])
-        geom_collection.append(geom)
-
-        if mask_id and mask_id in s['properties']:
-            id_collection.append(s['properties'][mask_id])
-
-        geom_mask = get_mask_from_shp(geom, grid.x, grid.y)
-        
-        if id_collection:
-            id = id_collection[i]
-        elif enumerate_id:
-            id = i+1
-        else:
-            id = 1
-
-        grid['grid_mask'] = xr.where(geom_mask, id, grid['grid_mask'])
-        mask_layers.append(id)
-
-    grid['reservoir'] = np.unique(mask_layers)
-
-    return grid
 

@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-import rasterio
-from rasterio.crs import CRS
-from rasterio.transform import Affine
 import os
 import sys
 from pathlib import Path
@@ -10,21 +7,26 @@ for candidate in sys.path:
         p = Path(candidate)
         environment_location = os.path.join(*p.parts[:p.parts.index('envs') + 2])
         break
+    
 os.environ['PROJ_LIB'] = os.path.join(environment_location, 'Library\share\proj')
 os.environ['GDAL_DATA'] = os.path.join(environment_location, 'Library\share')
+import rasterio
+from rasterio.crs import CRS
+from rasterio.transform import Affine
 
 # External imports
 from PySub import utils as _utils
-import fiona
-from fiona.crs import from_epsg
+# import fiona
+# from fiona.crs import from_epsg
+import shapefile as shp
 from shapely import geometry
+import pyproj
 import numpy as np
 import pandas as pd
 
 def save_polygon(geometries, fname, epsg):
     """Makes a shapefile without any properties from a list of list of coordinates.
     
-
     Parameters
     ----------
     geometries : list of polygons. Polygons are as a list of coordinates.
@@ -42,15 +44,49 @@ def save_polygon(geometries, fname, epsg):
     None.
 
     """
-    schema = {'geometry' : 'MultiPolygon', 'properties' : {}}
-    with fiona.open(fname, 'w', crs = from_epsg(epsg),
-                    driver='ESRI Shapefile', schema = schema) as output:
-        polygons = []
-        for j, pol in enumerate(geometries):
-            polygon = geometry.Polygon(pol)
-            polygons.append(polygon)
-        Multi = geometry.MultiPolygon(polygons)
-        output.write({'geometry': geometry.mapping(Multi), 'properties' : {}})
+    with shp.writer(fname) as writer:
+        for geom in geometries:
+            writer.shape(geom)
+    _make_projection(fname, epsg)
+    
+    # schema = {'geometry' : 'MultiPolygon', 'properties' : {}}
+    # with fiona.open(fname, 'w', crs = from_epsg(epsg),
+    #                 driver='ESRI Shapefile', schema = schema) as output:
+    #     polygons = []
+    #     for j, pol in enumerate(geometries):
+    #         polygon = geometry.Polygon(pol)
+    #         polygons.append(polygon)
+    #     Multi = geometry.MultiPolygon(polygons)
+    #     output.write({'geometry': geometry.mapping(Multi), 'properties' : {}})
+
+def _get_projection_file(fname):
+    return os.path.splitext(fname)[0]+'.prj'
+
+def _get_projection(fname):
+    prj_f = _get_projection_file(fname)
+    with open(prj_f) as prj:
+        crs = pyproj.CRS.from_wkt(prj.read())
+    return crs
+
+def _make_projection(fname, epsg):
+    prj_f = _get_projection_file(fname)
+    
+    wkt_string = pyproj.CRS.from_epsg(epsg).to_wkt()
+    with open(prj_f, "w") as f:
+        f.write(wkt_string)
+
+def get_shapely(fname):
+    shapes = shp.Reader(fname)
+    crs = _get_projection(fname)
+    geometries = []
+    for s in shapes:
+        geo_json = s.shape.__geo_interface__
+        geometry_type = geo_json['type'] 
+        
+        shapely_type = getattr(geometry, geometry_type)
+        geom = shapely_type(s['geometry']['coordinates'][0])
+        geometries.append(geom)
+    return geometries, crs
 
 def get_polygon(fname):
     """Get the xy coordinates of the polygons in a shapefile.
@@ -70,24 +106,15 @@ def get_polygon(fname):
 
     """
 
-    with fiona.open(fname) as fiona_file:
-        # crs = int(fiona_file.crs['init'][5:])    
-        crs = fiona_file.crs_wkt
-        geometries = []
-        for s in fiona_file:
-            if s['geometry'] is not None:
-                if s['geometry']['type'] == 'MultiPolygon':
-                    for i in range (len(s['geometry']['coordinates'])):
-                        geom = np.array(s['geometry']['coordinates'][i])[..., :2]
-                        geom = geom.reshape(geom.shape[1:])
-                        geometries.append(geom.tolist())
-                else:    
-                    geom = np.array(s['geometry']['coordinates'])[..., :2]
-                    if len(geom.shape) == 1:
-                        geom = np.vstack(geom)[None, ..., :2]
-                    geom = geom.reshape(geom.shape[1:])
-                    geometries.append(geom.tolist())
-    
+    shapes = shp.Reader(fname)
+    crs = _get_projection(fname)
+    geometries = []
+    for s in shapes:
+        geo_json = s.shape.__geo_interface__
+        geometry = geo_json['coordinates'] 
+        for g in geometry:
+            geometries.append(g)
+        
     return geometries, crs
 
 def save_raster(data, x, y, dx, dy, epsg, fname):
