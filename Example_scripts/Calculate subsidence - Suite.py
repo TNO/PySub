@@ -10,11 +10,11 @@ line = ((210950, 568010), (220001, 568300.1), (225001, 575300.1))
 if __name__ == '__main__':
      
     Suite = build_suite(
-        import_path = [r"\\tsn.tno.nl\Data\sv\sv-069554\Kluis\Lop_Proj_2021_EZK\B12_KEM16\WP4\Exampe input\Suite\Min.xlsx",
-                        r"\\tsn.tno.nl\Data\sv\sv-069554\Kluis\Lop_Proj_2021_EZK\B12_KEM16\WP4\Exampe input\Suite\Mid.xlsx",
-                        r"\\tsn.tno.nl\Data\sv\sv-069554\Kluis\Lop_Proj_2021_EZK\B12_KEM16\WP4\Exampe input\Suite\Max.xlsx"],
+        import_path = [r"Suite\Min.xlsx",
+                       r"Suite\Mid.xlsx",
+                       r"Suite\Max.xlsx"],
         name = 'Suite',
-        project_folder = r"\\tsn.tno.nl\Data\sv\sv-069554\Kluis\Lop_Proj_2021_EZK\B12_KEM16\WP4\Example output",
+        project_folder = None,
         bounds = None, 
         all_same_bounds = True) # They do not have to be the same grids, but you can force it with setting this parameter to True
     

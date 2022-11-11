@@ -59,18 +59,19 @@ class ProjectFolder(object):
             If the file does not exist.
 
         """
-        if os.path.isfile(file):
-            file_basename, ext = os.path.splitext(file)
-            if rename is None:
-                file_name = os.path.basename(file_basename)
+        if self.project_folder is not None:
+            if os.path.isfile(file):
+                file_basename, ext = os.path.splitext(file)
+                if rename is None:
+                    file_name = os.path.basename(file_basename)
+                else:
+                    _, rename_ext = os.path.splitext(rename)
+                    if rename_ext:
+                        ext = rename_ext
+                    file_name = rename
+                shutil.copyfile(file, self.input_file(file_name + ext))
             else:
-                _, rename_ext = os.path.splitext(rename)
-                if rename_ext:
-                    ext = rename_ext
-                file_name = rename
-            shutil.copyfile(file, self.input_file(file_name + ext))
-        else:
-            raise Exception(f'Invalid file. Cannot copy.')
+                raise Exception(f'Invalid file. Cannot copy.')
             
     def move(self, new_folder):
         """Copy all the files in the project tree to a new location

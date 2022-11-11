@@ -2,17 +2,10 @@
 """Running and displaying multiple SubsidenceModel objects
 """
 import os
-import sys
-
-environment_location = os.path.split(sys.path[0])[0]
-os.environ['PROJ_LIB'] = os.path.join(environment_location, 'Library\share\proj')
-os.environ['GDAL_DATA'] = os.path.join(environment_location, 'Library\share')
-
 from PySub import SubsidenceModelGas as _SubsidenceModelGas
 from PySub import Points as _Points
 from PySub import utils as _utils
 from PySub import plot_utils as _plot_utils
-from PySub import memory as _memory
 from PySub import ProjectFolder as _ProjectFolder
 import numpy as np
 import pandas as pd
@@ -22,7 +15,6 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
 from tqdm import tqdm
-import datetime
 
 class ModelSuite:
     """Object to contain subsidence modeling data and functionalities for multiple 
@@ -1993,7 +1985,7 @@ class ModelSuite:
 
         """
         if self.hasattr('models'):
-            print('Calculating subsdeince at points')
+            print('Calculating subsidence at points')
             result = {}
             for model in tqdm(self._models):
                 value = model.calculate_subsidence_at_points(_print = False)
@@ -2215,7 +2207,7 @@ class ModelSuite:
             location and reservoir input over time.
         """
         if self.hasattr('models'):
-            timeseries = self.get_subsidence_timeseries(x, y, reservoir = reservoir, model = model)
+            timeseries = self.get_timeseries(x, y, reservoir = reservoir, model = model)
             timesteps = self.unique_timesteps()
             timeseries = [t.interp(time = timesteps, method = 'linear') for t in timeseries.values()]
             timeseries_xr = xr.DataArray(timeseries, coords = {'model': self.name, 'time': timesteps})

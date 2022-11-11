@@ -2,23 +2,9 @@
     attributes of the model, together with the functionalities to run
     and plot the model results. User interfaces with this model.
 """
-from PySub import SubsidenceModelBase as _SubsidenceModelBase
-import os
-import sys
-from pathlib import Path
-for candidate in sys.path:
-    if 'envs' in candidate:
-        p = Path(candidate)
-        environment_location = os.path.join(*p.parts[:p.parts.index('envs') + 2])
-        break
-    
-os.environ['PROJ_LIB'] = os.path.join(environment_location, 'Library\share\proj')
-os.environ['GDAL_DATA'] = os.path.join(environment_location, 'Library\share')
-
-# External imports
 import numpy as np
+from PySub import SubsidenceModelBase as _SubsidenceModelBase
 
-# internal imports
 from PySub import CompactionModels as _CompactionModels
 from PySub import utils as _utils
 

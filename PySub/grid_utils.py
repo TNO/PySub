@@ -1,12 +1,10 @@
 import xarray as xr
-import shapely.geometry
 import numpy as np
 from PySub import utils as _utils
 from PySub import shape_utils as _shape_utils
 from matplotlib import path
-import shapefile as shp
-from shapely.ops import cascaded_union 
 
+from shapely.ops import cascaded_union 
 
 
 
