@@ -1,18 +1,8 @@
 """Module storing the SubsidenceModel class all other SubsidenceModel classes inherit from.
 """
 import os
-import sys
 import copy
-from pathlib import Path
-for candidate in sys.path:
-    if 'envs' in candidate:
-        p = Path(candidate)
-        environment_location = os.path.join(*p.parts[:p.parts.index('envs') + 2])
-        break
-    
-os.environ['PROJ_LIB'] = os.path.join(environment_location, 'Library\share\proj')
-os.environ['GDAL_DATA'] = os.path.join(environment_location, 'Library\share')
-os.environ['PROJ_DEBUG'] = '3'
+
 # External imports
 import xarray as xr
 import numpy as np
@@ -1530,9 +1520,6 @@ class SubsidenceModel:
             else:
                 name = 'unnamed_subsidence_model'
        
-        if self.hasattr('project_folder') and folder is not None:
-            self.project_folder.project_folder = os.path.join(folder, name)
-                    
         if folder is not None:
             project_folder = os.path.join(folder, name)
         else:
@@ -1626,7 +1613,7 @@ class SubsidenceModel:
         if not (self.hasattr('number_of_steps') and self.hasattr('number_of_reservoirs') and self.built):
             raise Exception('To set variable from a raster file, built the grid first.')
         reshaped_data = np.transpose(loaded_data, axes = (1, 2, 0))
-        data_xr = xr.DataArray(reshaped_data, (('y', y[:, 0]), ('x', x[0, :]), ('band', np.arange(number_of_bands))))
+        data_xr = xr.DataArray(reshaped_data, (('y', y), ('x', x), ('band', np.arange(number_of_bands))))
         interpolated_data = data_xr.interp_like(self.grid, method = 'linear', kwargs = {'fill_value': 0})
         return interpolated_data.values
     
@@ -1688,6 +1675,7 @@ class SubsidenceModel:
                         raise Exception(f'Invalid number of bands in .tif file: {number_of_bands}. Enter as a string for a .tif file with all the reservoirs in it, as a list for tif files with each one reservoir.')
                     
                 var = np.array(list_var)
+                var = np.einsum('lxy->xyl', var)
             elif _utils.is_list_of_numbers(var):
                 pass
             else:

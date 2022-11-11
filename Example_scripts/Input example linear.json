@@ -1,0 +1,288 @@
+{
+    "Model parameters": {
+        "Cell size (m)": {
+            "1": 100
+        },
+        "Influence radius (m)": {
+            "1": 7050
+        },
+        "Compaction model": {
+            "1": "linear"
+        },
+        "Subsidence model": {
+            "1": "nucleus of strain"
+        },
+        "Start time": {
+            "1": "1990-01-01 00:00:00"
+        },
+        "End time": {
+            "1": "2010-01-01 00:00:00"
+        }
+    },
+    "Reservoir parameters": {
+        "Shapefile location": {
+            "Norg": "../Tutorials/Shapefiles/Norg.shp",
+            "Allardsoog": "../Tutorials/Shapefiles/Allardsoog.shp",
+            "Een": "../Tutorials/Shapefiles/Een.shp"
+        },
+        "Depth to basement (m)": {
+            "Norg": 6000,
+            "Allardsoog": 5000,
+            "Een": 6500
+        },
+		"Poisson's ratio (-)": {
+            "Norg": 0.2,
+            "Allardsoog": 0.2,
+            "Een": 0.2
+        },
+        "Depth to reservoir (m)": {
+            "Norg": 3000,
+            "Allardsoog": 2500,
+            "Een": 2250
+        },
+        "Reservoir thickness (m)": {
+            "Norg": 50,
+            "Allardsoog": 120,
+            "Een": 100
+        },
+        "Compaction coefficient (1/bar)": {
+            "Norg": 1.2e-05,
+            "Allardsoog": 1.2e-05,
+            "Een": 1.2e-05
+        },
+        "Tau (s)": {
+            "Norg": 63115200,
+            "Allardsoog": 63115200,
+            "Een": 63115200
+        },
+        "Knothe angle (\u00b0)": {
+            "Norg": 150,
+            "Allardsoog": 150,
+            "Een": 120
+        },
+        "Reference stress rate (Pa/year)": {
+            "Norg": 1e-05,
+            "Allardsoog": 1e-05,
+            "Een": 1e-05
+        },
+        "Average density above reservoir (kg/m\u00b3)": {
+            "Norg": 2400,
+            "Allardsoog": 2400,
+            "Een": 2400
+        },
+        "Reference compaction coefficient (1/bar)": {
+            "Norg": 4.56e-05,
+            "Allardsoog": 4.56e-05,
+            "Een": 4.56e-05
+        },
+        "b": {
+            "Norg": 0.025,
+            "Allardsoog": 0.025,
+            "Een": 0.025
+        }
+    },
+    "Pressure start-end": {},
+    "Pressure development": {
+        "1990": {
+            "Norg": 500,
+            "Allardsoog": 400,
+            "Een": 388
+        },
+        "1991": {
+            "Norg": 485,
+            "Allardsoog": 390,
+            "Een": 378
+        },
+        "1992": {
+            "Norg": 470,
+            "Allardsoog": 380,
+            "Een": 368
+        },
+        "1993": {
+            "Norg": 455,
+            "Allardsoog": 370,
+            "Een": 358
+        },
+        "1994": {
+            "Norg": 440,
+            "Allardsoog": 360,
+            "Een": 348
+        },
+        "1995": {
+            "Norg": 425,
+            "Allardsoog": 350,
+            "Een": 338
+        },
+        "1996": {
+            "Norg": 410,
+            "Allardsoog": 340,
+            "Een": 328
+        },
+        "1997": {
+            "Norg": 395,
+            "Allardsoog": 330,
+            "Een": 318
+        },
+        "1998": {
+            "Norg": 380,
+            "Allardsoog": 320,
+            "Een": 308
+        },
+        "1999": {
+            "Norg": 365,
+            "Allardsoog": 310,
+            "Een": 298
+        },
+        "2000": {
+            "Norg": 350,
+            "Allardsoog": 300,
+            "Een": 288
+        },
+        "2001": {
+            "Norg": 350,
+            "Allardsoog": 300,
+            "Een": 288
+        },
+        "2002": {
+            "Norg": 350,
+            "Allardsoog": 300,
+            "Een": 288
+        },
+        "2003": {
+            "Norg": 350,
+            "Allardsoog": 300,
+            "Een": 288
+        },
+        "2004": {
+            "Norg": 350,
+            "Allardsoog": 300,
+            "Een": 288
+        },
+        "2005": {
+            "Norg": 350,
+            "Allardsoog": 300,
+            "Een": 288
+        },
+        "2006": {
+            "Norg": 350,
+            "Allardsoog": 300,
+            "Een": 288
+        },
+        "2007": {
+            "Norg": 350,
+            "Allardsoog": 300,
+            "Een": 288
+        },
+        "2008": {
+            "Norg": 350,
+            "Allardsoog": 300,
+            "Een": 288
+        },
+        "2009": {
+            "Norg": 350,
+            "Allardsoog": 300,
+            "Een": 288
+        },
+        "2010": {
+            "Norg": 350,
+            "Allardsoog": 300,
+            "Een": 288
+        }
+    },
+    "Points": {
+        "X": {
+            "S235": 215001,
+            "S146": 220001
+        },
+        "Y": {
+            "S235": 567600,
+            "S146": 568300
+        }
+    },
+    "Observations": {
+        "Observation ID": {
+            "0": "00000001",
+            "1": "00000001",
+            "2": "00000001",
+            "3": "00000001",
+            "4": "S146",
+            "5": "S146",
+            "6": "S146",
+            "7": "S146",
+            "8": "S146",
+            "9": "S146"
+        },
+        "Time": {
+            "0": "1990-04-03 00:00:00",
+            "1": "1991-04-06 00:00:00",
+            "2": "1993-04-10 00:00:00",
+            "3": "1995-04-13 00:00:00",
+            "4": "1990-12-25 00:00:00",
+            "5": "1991-12-28 00:00:00",
+            "6": "1994-01-01 00:00:00",
+            "7": "1996-01-04 00:00:00",
+            "8": "2000-01-01 00:00:00",
+            "9": "2004-01-01 00:00:00"
+        },
+        "X": {
+            "0": 215001,
+            "1": 215001,
+            "2": 215001,
+            "3": 215001,
+            "4": 220001,
+            "5": 220001,
+            "6": 220001,
+            "7": 220001,
+            "8": 220001,
+            "9": 220001
+        },
+        "Y": {
+            "0": 567600,
+            "1": 567600,
+            "2": 567600,
+            "3": 567600,
+            "4": 568300,
+            "5": 568300,
+            "6": 568300,
+            "7": 568300,
+            "8": 568300,
+            "9": 568300
+        },
+        "Subsidence (m)": {
+            "0": 0.0001,
+            "1": 0.0025,
+            "2": 0.00875,
+            "3": 0.01,
+            "4": 0.0002,
+            "5": 0.005,
+            "6": 0.0175,
+            "7": 0.02,
+            "8": 0.036,
+            "9": 0.04
+        },
+        "Lower error (m)": {
+            "0": 0.0025,
+            "1": 0.0025,
+            "2": 0.0025,
+            "3": 0.0025,
+            "4": 0.0025,
+            "5": 0.0025,
+            "6": 0.0025,
+            "7": 0.0025,
+            "8": 0.0025,
+            "9": 0.0025
+        },
+        "Upper error (m)": {
+            "0": 0.0025,
+            "1": 0.0025,
+            "2": 0.0025,
+            "3": 0.0025,
+            "4": 0.0025,
+            "5": 0.0025,
+            "6": 0.0025,
+            "7": 0.0025,
+            "8": 0.0025,
+            "9": 0.0025
+        }
+    }
+}

@@ -25,7 +25,6 @@ for candidate in sys.path:
 os.environ['PROJ_LIB'] = os.path.join(environment_location, 'Library\share\proj')
 os.environ['GDAL_DATA'] = os.path.join(environment_location, 'Library\share')
 
-import fiona
 from shapely import geometry
 
 GRID_VARIABLES = ['dx', 'influence_radius', 'reservoirs', 'shapes', 'timesteps']
@@ -83,7 +82,7 @@ def _move_tree(root_src_dir, root_dst_dir):
             shutil.copy(src_file, dst_dir)
 
 ## Export results
-def export_contours(model, variable = 'subsidence', reservoir = None, time = -1, contour_levels = None):  
+def export_contours(model, variable = 'subsidence', reservoir = None, time = -1, contour_levels = None, epsg = None):  
     """Save contours as a shapefile in project folder of .
 
     Parameters
@@ -105,6 +104,8 @@ def export_contours(model, variable = 'subsidence', reservoir = None, time = -1,
         contour_steps parameter.
 
     """     
+    if epsg is None: 
+        raise Exception('Explicitly define the epsg parameter when exporting contour files.')
     if model.project_folder.project_folder is not None:
         time_index = _plot_utils.time_entry_to_index(model, time)
         reservoir_index = _plot_utils.reservoir_entry_to_index(model, reservoir)
@@ -120,24 +121,17 @@ def export_contours(model, variable = 'subsidence', reservoir = None, time = -1,
             data = model[variable].isel(reservoir = reservoir_index, time = t).sum(dim = 'reservoir')
             contours = plt.contour(model.X, model.Y, data, levels = levels)
             file = model.project_folder.output_file(f'contours {time_labels[it]}.shp')
-            
-            schema = {'geometry': 'Polygon',
-                      'properties': {'contour level': 'float'},}
-            
-            with fiona.open(file, 'w', 'ESRI Shapefile', schema) as c:
-                for level, col in zip(contours.levels, contours.collections):
-                    # Loop through all polygons that have the same intensity level
-                    for contour_path in col.get_paths(): 
-                        # Create the polygon for this intensity level
-                        # The first polygon in the path is the main one, the following ones are "holes"
-                        for ncp, cp in enumerate(contour_path.to_polygons()):
-                            x, y = cp.T
-                            poly = geometry.Polygon([(i[0], i[1]) for i in zip(x,y)])
-            
-                        c.write({
-                            'geometry': geometry.mapping(poly),
-                            'properties': {'contour level': level},
-                            })
+            geom = []
+            levels = []
+            for level, col in zip(contours.levels, contours.collections):
+                # Loop through all polygons that have the same intensity level
+                for contour_path in col.get_paths(): 
+                    # Create the polygon for this intensity level
+                    # The first polygon in the path is the main one, the following ones are "holes"
+                    for cp in contour_path.to_polygons():
+                        geom.append(cp)
+                        levels.append(level)
+            _shape_utils.save_polygon(geom, file, epsg, fields = levels)
             plt.close()
     else:
         print('Warning: Model has no project folder assigned. Contours have not been saved.')
@@ -498,7 +492,7 @@ def export_tif(model, variable = 'subsidence', time = -1, reservoir = None, fnam
     """See export_tiff"""
     export_tiff(model, variable = variable, time = time, reservoir = reservoir, fname = fname, epsg = epsg)
 
-def export_tiff(model, variable = 'subsidence', time = -1, reservoir = None, epsg = 28992):
+def export_tiff(model, variable = 'subsidence', time = -1, reservoir = None, fname = None, epsg = 28992):
     """Export a variable from the SubsidenceModel object "model" to a .tif raster file.
 
     Parameters
@@ -532,7 +526,7 @@ def export_tiff(model, variable = 'subsidence', time = -1, reservoir = None, eps
     except:
         raise Exception(f'Variable {variable} not in model.')
     
-    file_basename = variable
+    file_basename = variable if fname is None else os.path.splitext(fname)[0]
     
     if 'time' in list(model[variable].coords.keys()):     
         steps = _plot_utils.time_entry_to_index(model, time)
@@ -541,45 +535,48 @@ def export_tiff(model, variable = 'subsidence', time = -1, reservoir = None, eps
                 time_label = f"{model.timesteps[step]}"
             elif np.issubdtype(model.timesteps.dtype, np.datetime64):
                 time_label = f"{np.datetime_as_string(model.timesteps, unit = 'D')[step]}"
-            _export_tiff(model, variable, step, reservoir = reservoir, fname = f'{file_basename} {time_label}.tif')
+            _export_tiff(model, variable, step, reservoir = reservoir, fname = f'{file_basename} {time_label}.tif', epsg = epsg)
     else:
-        _export_tiff(model, variable, 0, reservoir = reservoir, fname = f'{file_basename}.tif')
+        _export_tiff(model, variable, 0, reservoir = reservoir, fname = f'{file_basename}.tif', epsg = epsg)
 
 def _export_tiff(model, variable, time, reservoir = None, fname = None, epsg = 28992):
-    coordinates = list(model.grid[variable].coords.keys())
-    
-    if not 'x' in coordinates or not model.built:
-        print(f'Warning: No griddable parameter {variable}.')
-        return
-    
-    if 'reservoir' in coordinates and 'time' in coordinates: 
-        reservoir_index = _plot_utils.reservoir_entry_to_index(model, reservoir)
-        time_index = _plot_utils.time_entry_to_index(model, time)
-        if len(time_index) > 1:
-            raise Exception(f'Enter only one timestep for the variable time. Current entry: {time}.')
-        data = model.grid[variable].isel(reservoir = reservoir_index, time = time_index)
-        if len(reservoir_index) > 1:
-            data = data.sum(dim = 'reservoir')
-        data = data.transpose('x', 'y', ...)
-    elif 'reservoir' in coordinates:
-        reservoir_index = _plot_utils.reservoir_entry_to_index(model, reservoir)
-        data = model.grid[variable].isel(reservoir = reservoir_index)
-        if len(reservoir_index) > 1:
-            data = data.sum(dim = 'reservoir')
-        data = data.transpose('x', 'y', ...)
-    elif 'time' in coordinates: 
-        time_index = _plot_utils.time_entry_to_index(model, time)
-        if len(time_index) > 1:
-            raise Exception(f'Enter only one timestep for the variable time. Current entry: {time}.')
-        data = model.grid[variable].isel(time = time_index)
-        data = data.transpose('x', 'y', ...)
-    else:
-        data = model.grid[variable]
-        data = data.transpose('x', 'y')
-    data = np.flip(np.rot90(np.array(data)), axis = 0)
-    
     output_file = model.project_folder.output_file(fname)
-    _shape_utils.save_raster(data, model.x, model.y, model.dx, model.dy, epsg, output_file)
+    if output_file is not None:
+        coordinates = list(model.grid[variable].coords.keys())
+        
+        if not 'x' in coordinates or not model.built:
+            print(f'Warning: No griddable parameter {variable}.')
+            return
+        
+        if 'reservoir' in coordinates and 'time' in coordinates: 
+            reservoir_index = _plot_utils.reservoir_entry_to_index(model, reservoir)
+            time_index = _plot_utils.time_entry_to_index(model, time)
+            if len(time_index) > 1:
+                raise Exception(f'Enter only one timestep for the variable time. Current entry: {time}.')
+            data = model.grid[variable].isel(reservoir = reservoir_index, time = time_index)
+            if len(reservoir_index) > 1:
+                data = data.sum(dim = 'reservoir')
+            data = data.transpose('x', 'y', ...)
+        elif 'reservoir' in coordinates:
+            reservoir_index = _plot_utils.reservoir_entry_to_index(model, reservoir)
+            data = model.grid[variable].isel(reservoir = reservoir_index)
+            if len(reservoir_index) > 1:
+                data = data.sum(dim = 'reservoir')
+            data = data.transpose('x', 'y', ...)
+        elif 'time' in coordinates: 
+            time_index = _plot_utils.time_entry_to_index(model, time)
+            if len(time_index) > 1:
+                raise Exception(f'Enter only one timestep for the variable time. Current entry: {time}.')
+            data = model.grid[variable].isel(time = time_index)
+            data = data.transpose('x', 'y', ...)
+        else:
+            data = model.grid[variable]
+            data = data.transpose('x', 'y')
+        data = np.flip(np.rot90(np.array(data)), axis = 0)
+        
+        
+        
+        _shape_utils.save_raster(data, model.x, model.y, model.dx, model.dy, epsg, output_file)
 
 
 def export_all(model, name = None, epsg = 28992):  
@@ -1461,7 +1458,7 @@ def build_model(import_path, name = None, project_folder = None):
     else:
         if not isinstance(name, str):
             raise Exception(f'Invalid entry for Model name {name}. Use a string.')
-    pf = project_folder if project_folder is not None else os.path.dirname(import_path)
+    pf = project_folder 
     model = _SubsidenceModelGas.SubsidenceModel(name, pf)
     model.set_parameters(dx = dx, 
                         influence_radius = influence_radius, 

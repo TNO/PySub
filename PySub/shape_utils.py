@@ -1,30 +1,31 @@
 # -*- coding: utf-8 -*-
-import os
-import sys
-from pathlib import Path
-for candidate in sys.path:
-    if 'envs' in candidate:
-        p = Path(candidate)
-        environment_location = os.path.join(*p.parts[:p.parts.index('envs') + 2])
-        break
-    
-os.environ['PROJ_LIB'] = os.path.join(environment_location, 'Library\share\proj')
-os.environ['GDAL_DATA'] = os.path.join(environment_location, 'Library\share')
-import rasterio
-from rasterio.crs import CRS
-from rasterio.transform import Affine
 
+import os
+
+from osgeo import gdal
+from osgeo import osr
+from osgeo import ogr
 # External imports
 from PySub import utils as _utils
-# import fiona
-# from fiona.crs import from_epsg
+
 import shapefile as shp
 from shapely import geometry
 import pyproj
 import numpy as np
 import pandas as pd
 
-def save_polygon(geometries, fname, epsg):
+
+def ogr_polygon(coords):          
+    ring = ogr.Geometry(ogr.wkbLinearRing)
+    for coord in coords:
+        ring.AddPoint(coord[0], coord[1])
+
+    # Create polygon
+    poly = ogr.Geometry(ogr.wkbPolygon)
+    poly.AddGeometry(ring)
+    return poly.ExportToWkt()
+
+def save_polygon(geometries, fname, epsg, fields = None):
     """Makes a shapefile without any properties from a list of list of coordinates.
     
     Parameters
@@ -44,20 +45,33 @@ def save_polygon(geometries, fname, epsg):
     None.
 
     """
-    with shp.writer(fname) as writer:
-        for geom in geometries:
-            writer.shape(geom)
-    _make_projection(fname, epsg)
+    driver = ogr.GetDriverByName('Esri Shapefile')
+    ds = driver.CreateDataSource(fname)
+    layer = ds.CreateLayer('', None, ogr.wkbPolygon)
+    # Add one attribute
+    layer.CreateField(ogr.FieldDefn('id', ogr.OFTInteger))
+    if fields is not None:
+        layer.CreateField(ogr.FieldDefn('value', ogr.OFTReal))
+
+    defn = layer.GetLayerDefn()
+
+    for i, geom in enumerate(geometries):
+
+        # Create a new feature (attribute and geometry)
+        feat = ogr.Feature(defn)
+        feat.SetField('id', i)
+        if fields is not None:
+            feat.SetField('value', fields[i])
     
-    # schema = {'geometry' : 'MultiPolygon', 'properties' : {}}
-    # with fiona.open(fname, 'w', crs = from_epsg(epsg),
-    #                 driver='ESRI Shapefile', schema = schema) as output:
-    #     polygons = []
-    #     for j, pol in enumerate(geometries):
-    #         polygon = geometry.Polygon(pol)
-    #         polygons.append(polygon)
-    #     Multi = geometry.MultiPolygon(polygons)
-    #     output.write({'geometry': geometry.mapping(Multi), 'properties' : {}})
+        # Make a geometry, from Shapely object
+        polygon = ogr.CreateGeometryFromWkt(ogr_polygon(geom))
+        feat.SetGeometry(polygon)
+    
+        layer.CreateFeature(feat)
+        feat = polygon = None  # destroy these
+    
+        # Save and close everything
+    ds = layer = feat = polygon = None
 
 def _get_projection_file(fname):
     return os.path.splitext(fname)[0]+'.prj'
@@ -151,35 +165,28 @@ def save_raster(data, x, y, dx, dy, epsg, fname):
     None.
 
     """
-    try: rasterCrs = CRS.from_epsg(epsg)
-    except: 
-        print('Warning: Finding the projection failed, the raster has been saved without a specified EPSG coordinate system')
-        rasterCrs = None
-    transform = Affine.translation(x[0]-dx/2, y[0]-dy/2)*Affine.scale(dx,dy)
-    if len(data.shape) == 2:
+    n_dims = len(data.shape)
+    if n_dims == 2:
         transposed_data = data.reshape((1, data.shape[0], data.shape[1]))
-    elif len(data.shape) == 3:
+    elif n_dims == 3:
         transposed_data = np.transpose(data, axes = (2,0,1))
-    elif len(data.shape) == 4:
-        transposed_data = np.zeros(shape = (np.prod(data.shape[2:]), data.shape[0], data.shape[1]))
-        for i in range(data.shape[2]): # reservoir
-            for j in range(data.shape[3]): # timestep
-                new_index = (i * data.shape[3]) + j
-                transposed_data[new_index] = np.array([data[:, :, i, j]])
     else:
-        raise Exception(f'Warning: data with shape length {len(data.shape)} is invalid. Add shape with 1 > length < 5.')
-    interpRaster = rasterio.open(fname,
-                    'w',
-                    driver='GTiff',
-                    height=transposed_data.shape[1],
-                    width=transposed_data.shape[2],
-                    count=transposed_data.shape[0],
-                    dtype=transposed_data.dtype,
-                    crs=rasterCrs,
-                    transform=transform,
-                    )
-    interpRaster.write(transposed_data) # , data.shape[0])
-    interpRaster.close()
+        raise Exception(f'Number of dimensions supported for raster exportation is 2 or 3. Number of dimensions is {len(data.shape)}')
+    
+    srs = osr.SpatialReference()
+    srs.SetFromUserInput(f"EPSG:{epsg}")
+    
+    fileformat = "GTiff"
+    driver = gdal.GetDriverByName(fileformat)
+    dst_ds = driver.Create(fname, xsize=transposed_data.shape[2], ysize=transposed_data.shape[1],
+                    bands=transposed_data.shape[0], eType=gdal.GDT_Byte)
+    
+    geotransform = (min(x), dx, 0, min(y), 0, dy)
+    dst_ds.SetProjection(srs.ExportToWkt())
+    dst_ds.SetGeoTransform(geotransform)
+    for i, raster in enumerate(transposed_data):
+        dst_ds.GetRasterBand(i+1).WriteArray(raster)
+    dst_ds = None
     
 def load_raster(fname, layer = None):
     """
@@ -202,20 +209,25 @@ def load_raster(fname, layer = None):
         The y-cordinates of all raster nodes.
 
     """
-    src = rasterio.open(fname)
-    crs = src.crs.wkt if src.crs is not None else None
+    # src = rasterio.open(fname)
+    # crs = src.crs.wkt if src.crs is not None else None
     
-    band1 = src.read(1)
-    height = band1.shape[0]
-    width = band1.shape[1]
-    cols, rows = np.meshgrid(np.arange(width), np.arange(height))
-    xs, ys = rasterio.transform.xy(src.transform, rows, cols)
-    x = np.array(xs)
-    y = np.array(ys)
+    src = gdal.Open(fname)
+    if src is None:
+        raise Exception(f'Can not open file:\n{fname}')
+    crs = src.GetProjection() # wkt
+    
     if layer is None:
-        data = src.read()
+        data = src.GetRasterBand(1).ReadAsArray()
     else:
-        data = src.read(layer)
+        data = src.GetRasterBand(layer).ReadAsArray()
+    data = data[None, :, :]
+    ulx, xres, xskew, uly, yskew, yres  = src.GetGeoTransform()
+    lrx = ulx + (src.RasterXSize * xres + xres/2)
+    lry = uly + (src.RasterYSize * yres + yres/2)
+    x = np.linspace(ulx, lrx, src.RasterXSize)
+    y = np.linspace(uly, lry, src.RasterYSize)
+    src = None
     return data, x, y, crs
 
 def load_raster_from_csv(fname, delimiter = ';', header = 0, decimal = ',', method = 'linear', nan_values = 0):
