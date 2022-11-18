@@ -1,0 +1,572 @@
+# Changelog
+
+All notable changes and added or changed example cases added to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+(1.1.3) 2022-11-18
+# Added
+- Examples
+- yaml file for environment
+
+# Changed
+- Documentation
+
+# Fixed
+- Loading backgrounds
+
+(1.1.2) 2022-10-25
+# Added
+- Analytical method of determining gradients
+- Compaction models that are not linear can be set to linear by setting specific variables to 0
+- Installation instructions and addition examples
+- Maps can be added to plot with plot_utils.add_background()
+- Additional shapes can be added to plots
+
+# Fixed
+- Neater code when regarding salt
+- Unnecessary memory use better managed
+- Some bugs
+- Reverted ratetype to parallelized numba jitted code for speed
+- Plots only use unique geometry entries
+- better CRS management
+
+(1.1.1) 2022-08-30
+## Fixed
+- Order of scattered points
+- Discrepency between order of assigning colors to errorbars and timeseries
+- Titles of plot function with multiple figures
+- Additional shapes issues
+- Map the overlap between different fields issues
+- Removed z-values from inported shapefiles (unnecesary)
+- Small bug fixes
+
+(1.1.0) 2022-08-01
+## Added
+- Timeseries can be of any SubsidenceModel variable with time as a dimension
+- Minor extension utilities
+
+## Changed
+- Method of implementation Ratetype compaction (Vectorized)
+- Method of moving rigid basement (Vectorized)
+
+## Fixed
+- Issue with the contour levels when very low
+- Knothe function and xarrays
+- Reusing old Models and slightly changing variables is less of a hassle and less prone to errors
+- Minor Bug fixes
+
+(1.0.9) 2022-07-21
+## Added
+- More WMTS available
+- Poisson's ratio
+	- New file with Van Opstal coefficient derivation and imaging for report
+	- Van Opstal parameter file 
+	- Implementation of these coefficients in determination of subsidence
+- Deterministic method for BucketEnsmble
+	- Model.calculate_deterministic
+- Able to assign seed to random sampling methods.
+- Colors per group of reservoirs.
+	- Model.get_colors_grouped()
+- Assign color to reservoir shapes
+	- shape_kwargs = {'fc': colors}
+
+## Fixed
+- Issues with importing shapes of inconsitant data types between csv, excel or other methods
+- Issues with time datatypes
+- Passing kwargs to geometry objects
+- Contour levels of parameters with very low values were inconsitantly plotted
+- Prints and warnings cleaned up
+
+(1.0.8) 2022-06-09
+## Added
+- plot_utils.ask_for_line(model) to interactively draw line in existing model
+- Example pressure profile
+
+## Fixed
+- Issue with memory and complex numbers
+- Examples with old build functions
+- Consistent of time iterations bucketensemble
+- Visualisation open polygons
+- Some inefficiencies
+
+{1.0.7] 2022-05-23
+## Added
+- Model.get_subsidence_overview
+
+## Fixed
+- Bug with making suites from excel files
+- Better decision making on plot_utils.plot_overlap_cross_section function
+- Folder issues when necesary to move folders
+
+[1.0.6] 2022-05-17
+## Added
+- Limitted support dask
+	- 	Not available for the RTiCM method or subsidence!
+- Added support from text files (using JSON/XML format)
+- A python file to determine the Van Opstal coefficients
+- Concavity magnitude instead of 2D tensor
+- Documentation on methods: PySub Modeling Framework.docx
+
+## Changed
+- memory.build_{modell}_from_{data_type} functions have all been replaced with:
+	- build_model
+	- build_cavern_model
+	- build_bucket_ensemble
+	- build_suite
+- Changed RTiCM formulation to look more like the matlab function from Jitze Pruiksma
+
+## Fixed
+- Added dask to environment
+- Points plot on top of subsidence
+- Depth to basements left empty could still cause issues when nan
+- Fixed handling of bounds Suite
+- Proper check of what can be defined as "an Excel file".
+- Explanation of Templates based on experience users
+
+[1.0.5] 2022-05-12
+##Added
+- Filled cumulative overlapping subsidence plot
+	- plot_utils.plot_overlap_cross_section(model, line, mode = 'cumulative')
+	- Not cumulative (but with total): plot_utils.plot_overlap_cross_section(model, line, mode = 'individual')
+	
+## Fixed
+- Missing obligatory parameters (depth and shapefile location) did not cause correct error
+
+[1.0.4] 2022-05-06
+!!!Important: uninstall the package under the old name and re-install it using the new one.
+
+##Added
+- Moving rigid basement for salt models
+- Expanded on documentation, tutorials
+
+## Changed
+- Name of package changed to PySub
+
+## Fixed
+- Small bugs
+- Inconsistancy in timedecay and which timestep it took
+
+[1.0.3] 2022-05-02
+## Added 
+- cross section of interference
+	- plot_utils.plot_overlap_cross_section(model, line)
+
+## Fixed
+- os error plotting geometries
+- numerical entries safety added
+- Colormap changes to blue as subsidence
+- time decay cannot have any tau (restricted to numerical)
+- spelling thickness causes faulty return
+
+[1.0.2] 2022-04-13
+## Added
+- Export Esri grid files with export_ascii(Model)
+
+## Fixed
+- Even faster BucketEnsemble and timedecay compaction model
+- More consistent merging of models and better error messages.
+- Removed redundant code
+
+[1.0.1] 2022-04-12
+## Fixed
+- Issue entry 1 time for observations
+- Observations are now added to salt model in the build_salt_model_from_excel funtion
+
+[1.0.0] 2022-04-08
+## Added 
+- Tutorial 2 (Salt models and merging)
+- BucketEnsemble template and instructions on how to fill that template
+- Major improvements on the speed at which BuckEnsembles run
+	- Calculate for final timestep only
+	- Better projection
+	- Kernel no longer in xarray, numpy is 250x faster
+
+## Fixed
+- Merged model calling of attributes
+- Better error check in displaying of overlap
+- Better understanding of raster information
+
+[0.9.12b] 2022-04-05
+## Added
+- Documentation plot_utils
+- plot_utils.plot_overlap
+	- Shows overlap between reservoirs
+
+## Fixed
+- BucketEnsemble
+	- p10, 50, 90
+	- Distribution issues
+	- Only calculate final timestep
+- CompactionModel
+	- Better vecotrization
+- Convolution
+	- Better vectorization 
+- Issues crs
+
+[0.9.12a] 2022-03-29
+## Added 
+- Geometry.py for smoother handling of different data types using Geometry classes.
+	- Geometry classes must have methods:
+		- mask
+		- plot
+		- in_bounds
+	- and properties:
+		- bounds
+		- midpoint 
+- SubsidenceModelCavern: Modeling with caverns for for instance, salt production
+- MergedModel.py, for merging of model results
+- Points.load_points_from_excel to import point objects from an excel file
+- SubsidenceModelBase, where the different type of models can inherit from:
+	- SubsidenceModelGas, which also calculates compaction due to pressure changes in a reservoir
+	- SubsidenceModelCarvern, which uses precomputed or known volume changes in a reservoir to determine the subsidence
+
+## Changed
+- SubsidenceModel -> SubsidenceModelGas
+- SubsidenceModel.set_shapefiles -> SubsidenceModel.set_shapes
+
+## Fixed
+- More robust importing from python_subsidence
+- Influence radius handling
+- Many issues with importing data 
+- Fixed some unstructered variables
+- Unnamed projections
+- Unwanted errors to warnings
+	
+
+[0.9.11] 2022-03-17
+## Added
+- Additional worksheet in Excel template to get (semi-)realistic pressure development from start and end values
+- Scalebar in maps
+- Project folder class in memory.py
+	- A project folder and name must be given when initating a model.
+	- Folders are made when a file requests to be stored there
+	- Folders are: saved (where models are stored in), output (where results and figures are stored in) and input (where the input excel and any additional files are stored in)
+- Horizontal lines can be added
+- Export editable vector files as svg by setting the variable svg to True.
+- BucketEnsemble.py
+	- Containing the classes BucketEnsemble and VariableBucket
+	- BucketEnsemble is used for Monte Carlo Analyses where variables are chosen based on a probability of that variable being chosen.
+		- Creates probability plots
+		- And can find the variables with the least error to the observations from the runs made.
+	- VariableBucket is a class that stores the variables and their probabilities. has methods to sample from them.
+- Setup of SubsidenceModelSalt.py.
+
+## Changed
+- Faster and more memory efficient rate time compaction model.
+- All subsidence models inherit from a SubsidenceModel base
+
+## Removed
+- Requirements.txt
+	- Depricated with use of a yaml file to control environments
+
+# Fixed
+- Secundairy contour plots of the subsidence bowls hid the reservoirs
+- Robustness compaction models with different shapes of data
+- Errors for invalid values in the to be imported table in excel sheet
+- Errors from empty spaces and other invalid values floating around in workbook (but not in the to be imported table) are suppressed and resolved.
+- Ranges of parameters are more related to physical boundaries and do not cause errors, but ask for feedback.
+- Countour lines had different colors from the filled contours.
+- Importing csv and txt files.
+- Order of setting and assigning gives more comprehensible errors.
+- Titles of figures.
+- Spelling, grammar and mistakes in texts from memory.py, Points.py.
+- Fix example 'Calculate subsidence from pressure grid.py'.
+- Mixup units compaction.
+- Cashing downloaded images from WMTS.
+
+# Known Issues
+- Issues with shape of reservoirs when adding the shape of that reservoir as a grid.
+
+[0.9.10] 2022-02-18
+## Added
+- Model.report() function
+- Some documentation on Suites
+- Calculate_concavity function
+- Just printing or executing a line with a model now gives you what has and hasn't been set or built
+- Suite-only function: Suite.get_subsidence_spread, the minimum, mean and maximum value of all the models in the Suite.
+
+## Changed
+- Model.set_pressure -> Model.set_pressures to be consistent with naming standards of other variables
+
+## Fixed
+- Legend is now optional
+- Thorough spelling and grammar check of print statements, warnings and exceptions.
+- Fixed bugs:
+	- Importation from Excel errors (many)
+	- Artefact reduction
+	- Importing rasters (environment variables are set in all modules calling anything shapefile related)
+	- Compatibility Jupyter Notebook 
+
+[0.9.9] 2022-02-14
+## Added
+- SubsidenceModel.copy() function to copy a model properly.
+- The Documentation folder:
+	- Tutorial for making a simple model from an Excel file in Jupyter notebook.
+	- Instructions for filling in the Excel template.
+	- List with all the functions added to folder Documentation
+- The function description for the util.py, memory.py, Points.py, influence_kernel.py, influence_point.py modules has been added below the functions and are accessible using the help(module.function) function.
+- Printing occurs to update user with progression.
+
+## Changed
+- Documentation.py moved to the folder Documentation.
+- Functions to perform calculations at points has been renamed:
+	SubsidenceModel.calculate_subsidence_points() > SubsidenceModel.calculate_subsidence_at_points()
+
+## Fixed
+- (0.9.9b) Fixed mistake in error detection with bounds, if the shapes are not in that bound.
+- (0.9.9b) Prevented double imports of PySub modules (by renaming them _module_name in back end).
+- (0.9.9b) Fixed issue with near zero values of certain parameters (in grids, i.e. thickness, depths and reservoir masks, introduced hardcoded EPSILON value).
+- (0.9.9b) Fixed mistake with ratetype compaction example due to recent updates.
+
+[0.9.8] 2022-02-08
+## Added
+- Ability to import more variables as a grid via .tif raster files.
+	- All variables except depth, depth to basement and Knothe angle are importable via raster files.
+	- Updated example where models are build using raster files.
+- Observations are normalized to the earliest observation in the observation dataset.
+- Error function to SubsidenceModel and ModelSuite to determine the deviation from the observations set in the model.
+- memory.py: Stores the loading, saving and export functions, including from excel.
+	- import_from_excel(path) is split up in import_model_from_excel and import_suite_from_excel.
+
+## Changed
+- Masking of reservoirs doesn't occur only using shapefiles. Now also grid masking is available.
+	- Call masking with mask_reservoirs() instead of mask_from_shapefiles().
+	- NB: Setting reservoirs from grid can still export a shapefile and show reservoirs (plot_utils.plot_reservoirs()) as shapes.
+- Determining the subsidence at a point location is also available by interpolation from the grid data. This is now the default.
+- Updated environment file (python_subsidence.yml) due to updated and new packages.
+- Suite can be built from multiple Excel files that were intended for a model each. Probably preferable from building a Suite from a single Excel file.
+
+## Fixed
+- Spelling/clarifying function names.
+- List of strings objects are determined better to allow easier importing.
+- Small convolution optimization.
+- Small optimization xarray handling in CompactionModel.
+- Spelling in comments, printing, warnings, errors, function naming.
+
+[0.9.7] 2022-02-03
+## Added
+- export(SubsidenceModel) function.
+	- Export the model with a .prj file to a folder and create csv-, shape- and grid-files of all the available information in the model.
+
+[0.9.6] 2022-02-02
+## Added
+- shape_utils.py for conversion between GDAL and numpy (shapefiles and rasters)
+- The range of the y-axis is now settable and overrides y_axis_exageration_factor 
+- Figures can now be saved by setting the variable "fname" in plot_utils.plot_XXX functions
+- as_df method for compaction models, points and observation points
+- Calculate_subsidence.py:
+	- More expansive Suite functionality portrayed in the example.
+	- Saving and loading of saved models.
+- plot_utils.plot_subsidence has additional input variable "variable" where other gridded data can be plotted with.
+- Appropriate warnings for distinguishing between Model and Suite where necesary
+- Use formatted string (f'') notation in titles without the "f" in front of the string to have it interpreted as 
+  a formatted string in the function. Only works with {Model.attribute}. Probably only needed with {Model.name}.
+
+## Fixed
+- Issues with Model functionality and coverage by Suite
+- Issues with consistancy between plotting of the same figures
+- Calculation of gradient now makes sense
+- Consistent flattening of ragged lists
+
+[0.9.5] - 2022-01-27
+## Added 
+- Working example of a model Suite
+	- Example Excel file and example .py file has been expanded with a model Suite example.
+- Conversion between SI units for plotted data, now the data can be plotted in mm, cm, m or km. 
+	- *NB*: The input still needs to be in m.
+- Model.calculate_subsidence_rate(), with which the rate of subsidence is calculated and returned.
+- Able to set contour levels for plotting for a SubsidenceModel and -Suite object for consistent plotting contours.
+- Maximum amount of subsidence and location with the maximum subsidence in grid coordinates.
+- Plot timeseries, with a choice to ignore the input of the location and plot the maximum subsidence.
+	- Uses interpolation if the location is not on a grid point.
+- Suite is now subscriptable
+
+## Changed
+- plot_utils.py has additional functiond for Suites, but any top level functionality can handle both Suites and SubsidenceModels
+- Background maps can be picked yourself as well and layers can be changed.
+- Contour levels for Models and Suites are now able to be set with start end and step size.
+- The model doesn't remember the geometry as Polygon objects, but as points.
+- calculate_XXX functions also return the calculated values
+
+## Fixed
+- Interpolation over grid issue
+- Small issue with gradient of subsidence
+- More robust checks for data types
+- Subsidence is now negative
+
+[0.9.4b] - 2022-01-19
+Bugfixes
+
+## Added
+- ModelSuite object inSubsidenceSuite.py
+	- Imports and models Multiple SubsidenceModels and compare.
+	- Additional functions in plot_utils.py to plot Suites.
+	- No examples yet.
+
+## Changed
+- Slight improvement (speed and size-wise) saved objects.
+
+## Fixed
+- Synchronizing with git documents
+
+[0.9.4] - 2022-01-18
+## Added
+- Saving and loading of SubsidenceModel objects as .smf files.
+	python_subsidence.SubsidenceModel.save(Model, path)
+	Model = python_subsidence.SubsidenceModel.load(path)
+- Set a value to exagerate the size of the y-axis by a certain factor for line plots.
+	Variable y_axis_exageration_factor vailable for function:
+	- SubsidenceModel.plot_utils.plot_cross_section()
+	- SubsidenceModel.plot_utils.plot_subsidence_points()
+	- SubsidenceModel.plot_utils.plot_subsidence_observations()
+- SubsidenceModel.volume property to determine the volume of the subsidence bowl(s)
+- Semi-private functions in util.py 
+
+## Changed
+- ObservationPoint.py -> Points.py
+	- Added Point and PointCollection classes to represent points in SubsidenceModel object for consistancy.
+
+## Fixed
+- Calculations from grid now actually work.
+	- Renamed: SubsidenceModel.reservoir_from_grid() -> SubsidenceModel.mask_from_grid().
+- Defaults of matplotlib.pyplot.errorbar can now be set using set_errorbar_defaults().
+- Values that are not used can now be None or not set/assigned.
+- Flexibility issues with ragged nested lists.
+- Fixed GDAL and its many proj.db errors, only works with right environment.
+- Less lenient on which warnings to show.
+
+[0.9.3] - 2022-01-14
+## Added
+- Observations
+	- ObservationPoint.py with the classes ObservationPoint and ObservationCollection
+	- Calculating at those locations using SubsidenceModel.calculate_subsidence_at_observations()
+	- Visualizing the observed and modelled subsidence using plot_utils.plot_subsidence_points()
+- Plotting errorbars
+	- plot_utils.add_errorbars
+- Plotting has been elaborated in Documentation.py
+
+## Changed
+- Plotting only through plot_utils module, not through the SubsidenceModel object.
+- mask -> reservoir in grid for consistancy and clearer meaning
+
+## Fixed
+- Better naming of parameters
+- Additional information in documentation
+- Bugs with datetime objects
+
+[0.9.2] - 2022-01-12
+## Added 
+- Import grid for pressure
+	- Added example in "Calculate subsidence from pressure grid.py"
+	- Run compaction from grid
+	- Add reservoir masks from a grid
+
+## Changed
+- Figures:
+	- Negative subsidence in plots
+	- No errors when trying to plot data that doesn't exist, just doesn't plot it
+
+## Fixed
+- Compaction at the second timestep is fixed
+- Order of the pressure entries should be the same as the entries for reservoir parameters. Added function to do so for you.
+	- utils.reindex()
+- Added a function to better determine of something is a number or not.
+	- utils.is_number()
+
+[0.9.1] - 2021-12-31
+## Fixed
+- Issue RTiCM
+- Details documentation
+- Plotting of points raised Exception in default mode
+- More consistent notation in code
+
+[0.9.0] - 2021-12-31
+Complete functionality for the calculations of a single model, not V1.0.0 because of doubts ratetype
+## Added
+- Isotach formulation of the ratetype compaction model
+- Input in Excel for RTiCM
+
+## Fixed
+- Import from file
+- Unnecessary uploads testfiles
+- Details in Changelog
+- Details in Documentation
+
+[0.2.1] - 2021-12-29
+Complete functionality for visualisation of model data
+## Changed
+- Relocation of files needed in import:
+	C:\Users\Username\python-subsidence\python_subsidence\python_subsidence
+
+[0.2.0] - 2021-12-29
+## Added 
+- Documentation.py, which explains how to install the environment and the package
+  and documents the functions the user interfaces with.
+- A way to install the package and make it importable with 'import python_subsidence'
+	- folder python_subsidence, so the package will be loadable (in V0.2.1) 
+	- __init__.py and setup.py 
+- Support for dates/timestamp/datetime formulation in input
+- Support Knothe for determining subsidence on point
+- Functions to set the standard layout of figures
+
+## Changed
+- Renamped gridbase.py > grid_utils.py for consistancy
+- Time decay uses temporal superpoisition instead of convolution over time, so different timesteps are supported.
+
+## Fixed
+- Automatic contour level determining determines them better with lower values in dataset
+- Fixed Time decay using temporal superposition
+
+[0.1.1] - 2021-12-27
+## Added
+- Worksheet Excel where points and observations can be added
+
+## Fixed
+- Entries Knothe are realistic
+- Errors regarding private attributes and checking if those attributes exist
+- Handling of points from Excel to entry into grid and Model objects
+
+[0.1.0] - 2021-12-24
+## Added
+- Integrated method for calculating subsidence for specific points.
+	- Plotting of maps with points: Model.plot_points_on_map()
+	- Plotting of subsidence over time: Model.plot_subsidence_points()
+- Knothe as a method for calculating subsidence
+
+## Depricated
+- Model.calculate_subsidence_point(point)
+
+## Fixed
+- Dynamic colourmapping doesn't cause errors
+	- When a cmap is chosen, it will be shifted so the midpoint is set to zero, and the alpha of that midpoint is set to 0.
+- Time-decay method gives correct results
+
+
+[0.0.2] - 2021-12-22
+## Added:
+- Visualisations:
+    - of resevoir boundaries: Model.plot_reservoirs()
+    - of subsidence: Model.plot_subsidence()
+    - and of cross sections: Model.plot_crosssection(point)
+    - Plot utilities: plot_utils.py and WMTS_utils.py
+- Calculating subsidence on a point: Model.calculate_subsidence_point(point)
+    - InfluencePoint kernel object: influence_point.py
+- Input Excel file parameters: 
+    - input parameters for different subsidence models
+    - Nucleus of strain or Knothe
+- Import environment for easier installment of packages: python-subsidence.yml
+
+## Changed
+- Example case expanded with more timesteps
+- Compaction model is assigned to each reservoir, instead of as a batch of reservoirs.
+- Convolution: 
+    - Convolution doesn't impose a cutoff at values close to 0 anymore. This is solved at visualisation level.
+    - Convolution is only done per reservoir and within the bounds of that reservoir. Not over the entirety of the grid for speed.
+
+## Fixed
+- Issues setting of parameters between versions of xarray
+- Private functions and parameters are now private
+- Handling of order of attribute and parameter setting now return exceptions with instructions or discrepencies, or they solve themselves
+- Sources in code

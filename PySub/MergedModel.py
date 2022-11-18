@@ -169,7 +169,6 @@ def _merge(model1, model2, variables = [],
     else:
         raise Exception('Merge only supports SubsidenceModel types and xarrays with at least the variables x and y') 
     
-    _model1 = _model1.chunk({'time':1,'reservoir':1})
     
     if _utils.isSubsidenceModel(model2):
         _model2 = model2.grid
@@ -178,8 +177,7 @@ def _merge(model1, model2, variables = [],
     else:
         raise Exception('Merge only supports SubsidenceModel types and xarrays with at least the variables x and y')
 
-    _model2 = _model2.chunk({'time':1,'reservoir':1})
-
+    
     if isinstance(variables, str):
         variables = [variables]
     elif _utils.is_list_of_strings(variables):
@@ -211,13 +209,27 @@ def _merge(model1, model2, variables = [],
     
     interpolated1 = _model1.interp(
         coords = merged_coords,
-        kwargs = {'fill_value': 'extrapolate'},
+        kwargs = {'fill_value': 0},
         )
     
     interpolated2 = _model2.interp(
         coords = merged_coords,
-        kwargs = {'fill_value': 'extrapolate'},
+        kwargs = {'fill_value': 0},
         )
+    
+    interpolated1 = xr.where(
+        interpolated1.time > _model1.time[-1],
+        interpolated1.sel(time = _model1.time[-1]),
+        interpolated1,
+        )
+    
+    interpolated2 = xr.where(
+        interpolated2.time > _model2.time[-1],
+        interpolated2.sel(time = _model2.time[-1]),
+        interpolated2,
+        )
+    
+    
     to_merge = [interpolated1, interpolated2]
     
     unique_variables = np.unique([list(_model1.var())+ 

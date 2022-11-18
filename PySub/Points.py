@@ -874,7 +874,7 @@ def load_observation_points_from_df(observation_df, observation_column = "Observ
         if _utils.is_iterable(time):
             time = time.values
         else:
-            time = np.array([np.datetime64(time.value, 'ns')])
+            time = _utils.convert_to_datetime(time)
         
         obs = observation_df[observation_column][name]
         if _utils.is_iterable(obs):
@@ -904,81 +904,7 @@ def load_observation_points_from_df(observation_df, observation_column = "Observ
         
     return ObservationCollection(observation_points)
 
-def load_observation_points_from_excel(import_path, sheet_name = 'Observations', 
-                                       index_column = 'Observation ID', 
-                                       observation_column = 'Subsidence (m)',
-                                       lower_error_column = 'Lower error (m)', 
-                                       upper_error_column = 'Upper error (m)',
-                                       x_column = 'X', y_column = 'Y', time_column = 'Time'):
-    """Import an ObservationCollection object from an Excel file. The ObservationCollection
-    object stores information about observations over time. The information includes:
-        - The location in x- and y-coordinates
-        - Values for observations
-        - The The timstamps at which each observation is taken
-        - A lower and upper error bound.
 
-    Parameters
-    ----------
-    import_path : str
-        Path to Excel file.
-    sheet_name : int/str, optional
-        If a string, the name of the worksheet in the excel file. When an integer,
-        the integer indicates n, where n means the the nth sheet in the Excel workbook.
-        The default is 'Observations'.
-    index_column : int/str, optional
-        An integer for the index of the columns where the observation names are 
-        stored or a string for its title. 
-        The default is 'Observation ID'.
-    observation_column : int/str, optional
-        An integer for the index of the columns where the observations are 
-        stored or a string for its title. The default is 'Subsidence (m)'.
-    lower_error_column : int/str, optional
-        An integer for the index of the columns where the observation errors are 
-        stored or a string for its title. The default is 'Lower error (m)'.
-    upper_error_column : int/str, optional
-        An integer for the index of the columns where the observation errors are 
-        stored or a string for its title. The default is 'Upper error (m)'.
-    x_column : int/str, optional
-        An integer for the index of the columns where the observation locations' x-coordinates are 
-        stored or a string for its title. The default is 'X'.
-    y_column : TYPE, optional
-        An integer for the index of the columns where the observation locations' y-coordinates are 
-        stored or a string for its title. The default is 'Y'.
-    time_column : TYPE, optional
-        An integer for the index of the columns where the observations' timestamps are 
-        stored or a string for its title. The default is 'Time'.
-
-    Returns
-    -------
-    observation_points : ObservationCollection
-        An object storing information relating to observations over time.
-
-    """
-    
-    if not isinstance(import_path, str):
-        raise Exception('The path used for importing should be a string.')
-    elif (not import_path.endswith(('.xlsx', '.xls')) or
-          not os.path.isfile(import_path)):
-        raise Exception('Not an Excel file.')
-            
-    observation_df = pd.read_excel(import_path, sheet_name = sheet_name, index_col = 0, header = 0)
-    observation_points = load_observation_points_from_df(observation_df, observation_column = observation_column,
-                                    x_column = x_column, y_column = y_column, time_column = time_column,
-                                    lower_error_column = lower_error_column, upper_error_column = upper_error_column)
-        
-    return observation_points
-    
-def load_points_from_excel(import_path, sheet_name = 'Points',
-                           x_column = 'X', y_column = 'Y'):
-    if not isinstance(import_path, str):
-        raise Exception('The path used for importing should be a string.')
-    elif (not import_path.endswith(('.xlsx', '.xls')) or
-          not os.path.isfile(import_path)):
-        raise Exception('Not an Excel file.')
-    point_df = pd.read_excel(import_path, sheet_name, index_col = 0, header = 0)
-    points = load_points_from_df(point_df, 
-                        x_column = 'X', y_column = 'Y')   
-    
     
     
     

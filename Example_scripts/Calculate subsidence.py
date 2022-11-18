@@ -1,7 +1,7 @@
 """Pilot script for modeling workflow for subsidence"""
 #%% import packages used in this example
 from PySub import plot_utils as plot
-from PySub.memory import build_model, export_tiff
+from PySub.memory import build_model
 from PySub.SubsidenceSuite import ModelSuite
 
 if __name__ == '__main__':
@@ -14,13 +14,15 @@ if __name__ == '__main__':
     Model = build_model(import_path, name = name, 
                         project_folder = project_folder)
     
-    Model.grid['gridded_thickness'] = Model.thickness*Model.reservoir_mask
-    fname = r"C:\Users\davidsb\OneDrive - TNO\Documents\PySub\Example_scripts\Model from grid\Allardsoog_thickness.tif"
-    export_tiff(Model, variable = 'gridded_thickness', time = -1, reservoir = 'Allardsoog', fname = fname, epsg = 28992)
     Model.calculate_compaction()
     Model.calculate_subsidence()
     
-    plot.plot_subsidence(Model)
+    # plot with a different background map
+    plot.plot_subsidence(Model,
+                         service = 'https://map1c.vis.earthdata.nasa.gov/wmts-geo/wmts.cgi',
+                         layer = 'VIIRS_CityLights_2012',
+                         epsg = 28992,
+                         )
     models.append(Model)
     
     #%% Make the time-decay model

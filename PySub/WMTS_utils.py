@@ -1,15 +1,11 @@
 """https://github.com/SciTools/cartopy/issues/1049
 """
 from owslib.wmts import WebMapTileService
-import cartopy.crs as ccrs
-import cartopy.io.ogc_clients as ogcc
 
 import matplotlib.pyplot as plt
 
 import numpy as np
 from PIL import Image
-
-import time
 
 PIXEL_SIZE = 0.00028 # in 1/m, works for Dutch maps...
 

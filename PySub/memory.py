@@ -764,6 +764,10 @@ def excel_to_json(file, sheet_names = []):
     json_file = "".join((file_name, ".json"))
     data = {}
     
+    if len(sheet_names) == 0:
+        xls = pd.ExcelFile(file)
+        sheet_names = xls.sheet_names
+    
     for sheet in sheet_names:
         try: df = pd.read_excel(file, sheet_name = sheet, index_col=0)
         except: df = pd.DataFrame()
@@ -1036,7 +1040,7 @@ def import_reservoir_bucket_from_json(import_path):
             pressure_start_end_df,
             pressure_probability_df)
 
-def build_bucket_ensemble(import_paths, name, project_folder = None):
+def build_bucket_ensemble(import_paths, name, project_folder):
     """Build a bucket ensemble from a collection of Excel templates representing a 
     reservoir, its parameters and probability of parameters.
 
@@ -1055,6 +1059,7 @@ def build_bucket_ensemble(import_paths, name, project_folder = None):
     BucketEnsemble Model.
 
     """
+    
     (buckets, timesteps, dx, influence_radius, compaction_model, subsidence_model
      ) = import_bucket_ensemble(import_paths)
     model = _BucketEnsemble.BucketEnsemble(name , project_folder = project_folder)
@@ -2135,3 +2140,79 @@ def build_model_from_xarray(xarray, name, project_folder = None):
     model._bounds = (min_x, min_y, max_x, max_y)
     
     return model
+
+def load_observation_points(import_path, sheet_name = 'Observations', 
+                                       index_column = 'Observation ID', 
+                                       observation_column = 'Subsidence (m)',
+                                       lower_error_column = 'Lower error (m)', 
+                                       upper_error_column = 'Upper error (m)',
+                                       x_column = 'X', y_column = 'Y', time_column = 'Time'):
+    """Import an ObservationCollection object from an Excel file. The ObservationCollection
+    object stores information about observations over time. The information includes:
+        - The location in x- and y-coordinates
+        - Values for observations
+        - The The timstamps at which each observation is taken
+        - A lower and upper error bound.
+
+    Parameters
+    ----------
+    import_path : str
+        Path to Excel file.
+    sheet_name : int/str, optional
+        If a string, the name of the worksheet in the excel file. When an integer,
+        the integer indicates n, where n means the the nth sheet in the Excel workbook.
+        The default is 'Observations'.
+    index_column : int/str, optional
+        An integer for the index of the columns where the observation names are 
+        stored or a string for its title. 
+        The default is 'Observation ID'.
+    observation_column : int/str, optional
+        An integer for the index of the columns where the observations are 
+        stored or a string for its title. The default is 'Subsidence (m)'.
+    lower_error_column : int/str, optional
+        An integer for the index of the columns where the observation errors are 
+        stored or a string for its title. The default is 'Lower error (m)'.
+    upper_error_column : int/str, optional
+        An integer for the index of the columns where the observation errors are 
+        stored or a string for its title. The default is 'Upper error (m)'.
+    x_column : int/str, optional
+        An integer for the index of the columns where the observation locations' x-coordinates are 
+        stored or a string for its title. The default is 'X'.
+    y_column : TYPE, optional
+        An integer for the index of the columns where the observation locations' y-coordinates are 
+        stored or a string for its title. The default is 'Y'.
+    time_column : TYPE, optional
+        An integer for the index of the columns where the observations' timestamps are 
+        stored or a string for its title. The default is 'Time'.
+
+    Returns
+    -------
+    observation_points : ObservationCollection
+        An object storing information relating to observations over time.
+
+    """
+    
+    if not os.path.isfile(import_path):
+        raise Exception('The path should be a string that directs to a json or Excel file.')
+    elif import_path.endswith(('.xlsx', '.xls')):
+        observation_df = pd.read_excel(import_path, sheet_name = sheet_name, index_col = index_column, header = 0)
+    elif import_path.endswith('.json'):
+        observation_df = json_to_df(import_path,)[sheet_name]
+        observation_df = observation_df.set_index(index_column)
+    observation_points = _Points.load_observation_points_from_df(observation_df, observation_column = observation_column,
+                                    x_column = x_column, y_column = y_column, time_column = time_column,
+                                    lower_error_column = lower_error_column, upper_error_column = upper_error_column)
+        
+    return observation_points
+    
+def load_points(import_path, sheet_name = 'Points', index_column = 'Point ID',
+                           x_column = 'X', y_column = 'Y'):
+    if not os.path.isfile(import_path):
+        raise Exception('The path should be a string that directs to a json or Excel file.')
+    elif import_path.endswith(('.xlsx', '.xls')):
+        point_df = pd.read_excel(import_path, sheet_name = sheet_name, index_col = index_column, header = 0)
+    elif import_path.endswith('.json'):
+        point_df = json_to_df(import_path,)[sheet_name]
+    points = _Points.load_points_from_df(point_df, 
+                        x_column = x_column, y_column = y_column)   
+    return points

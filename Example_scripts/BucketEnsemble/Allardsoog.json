@@ -1,0 +1,363 @@
+{
+    "Model parameters": {
+        "Cell size (m)": {
+            "Allardsoog": 50
+        },
+        "Influence radius (m)": {
+            "Allardsoog": 7050
+        },
+        "Compaction model": {
+            "Allardsoog": "linear"
+        },
+        "Subsidence model": {
+            "Allardsoog": "nucleus of strain"
+        },
+        "Start time": {
+            "Allardsoog": 1990
+        },
+        "End time": {
+            "Allardsoog": 2010
+        }
+    },
+    "Reservoir parameters": {
+        "Shapefile location": {
+            "Min": "\\\\tsn.tno.nl\\Data\\sv\\sv-069554\\Kluis\\Lop_Proj_2021_EZK\\B12_KEM16\\WP4\\sampledata\\Allardsoog.shp",
+            "Mid": "\\\\tsn.tno.nl\\Data\\sv\\sv-069554\\Kluis\\Lop_Proj_2021_EZK\\B12_KEM16\\WP4\\sampledata\\Allardsoog.shp",
+            "Max": "\\\\tsn.tno.nl\\Data\\sv\\sv-069554\\Kluis\\Lop_Proj_2021_EZK\\B12_KEM16\\WP4\\sampledata\\Allardsoog.shp"
+        },
+        "Depth to basement (m)": {
+            "Min": 4500,
+            "Mid": 5000,
+            "Max": 5500
+        },
+        "Poisson's ratio (-)": {
+            "Min": 0.25,
+            "Mid": 0.25,
+            "Max": 0.25
+        },
+        "Depth to reservoir (m)": {
+            "Min": 2250,
+            "Mid": 2300,
+            "Max": 2350
+        },
+        "Reservoir thickness (m)": {
+            "Min": 80,
+            "Mid": 100,
+            "Max": 120
+        },
+        "Compaction coefficient (1/bar)": {
+            "Min": 1e-05,
+            "Mid": 1.2e-05,
+            "Max": 1.3e-05
+        },
+        "Tau (s)": {
+            "Min": NaN,
+            "Mid": NaN,
+            "Max": NaN
+        },
+        "Knothe angle (\u00b0)": {
+            "Min": NaN,
+            "Mid": NaN,
+            "Max": NaN
+        },
+        "Reference stress rate (Pa/year)": {
+            "Min": NaN,
+            "Mid": NaN,
+            "Max": NaN
+        },
+        "Average density above reservoir (kg/m\u00b3)": {
+            "Min": NaN,
+            "Mid": NaN,
+            "Max": NaN
+        },
+        "Reference compaction coefficient (1/bar)": {
+            "Min": NaN,
+            "Mid": NaN,
+            "Max": NaN
+        },
+        "b": {
+            "Min": NaN,
+            "Mid": NaN,
+            "Max": NaN
+        }
+    },
+    "Reservoir parameter probability": {
+        "Shapefile location probability (factor)": {
+            "Min": 0.5,
+            "Mid": 0.5,
+            "Max": 0.0
+        },
+        "Depth to basement probability (factor)": {
+            "Min": 0.3333333333333333,
+            "Mid": 0.3333333333333333,
+            "Max": 0.3333333333333333
+        },
+        "Poisson's ratio probability (factor)": {
+            "Min": 1,
+            "Mid": 0,
+            "Max": 0
+        },
+        "Depth to reservoir probability (factor)": {
+            "Min": 0.3333333333333333,
+            "Mid": 0.3333333333333333,
+            "Max": 0.3333333333333333
+        },
+        "Reservoir thickness probability (factor)": {
+            "Min": 0.3,
+            "Mid": 0.4,
+            "Max": 0.3
+        },
+        "Compaction coefficient probability (factor)": {
+            "Min": 0.3,
+            "Mid": 0.4,
+            "Max": 0.3
+        },
+        "Tau probability (factor)": {
+            "Min": NaN,
+            "Mid": NaN,
+            "Max": NaN
+        },
+        "Knothe angle probability (factor)": {
+            "Min": NaN,
+            "Mid": NaN,
+            "Max": NaN
+        },
+        "Reference stress rate probability (factor)": {
+            "Min": NaN,
+            "Mid": NaN,
+            "Max": NaN
+        },
+        "Average density above reservoir probability (factor)": {
+            "Min": NaN,
+            "Mid": NaN,
+            "Max": NaN
+        },
+        "Reference compaction coefficient probability (factor)": {
+            "Min": NaN,
+            "Mid": NaN,
+            "Max": NaN
+        },
+        "b probability (factor)": {
+            "Min": NaN,
+            "Mid": NaN,
+            "Max": NaN
+        }
+    },
+    "Pressure start-end": {},
+    "Pressure development": {
+        "1990": {
+            "Min": 375,
+            "Mid": 363,
+            "Max": 475
+        },
+        "1991": {
+            "Min": 365,
+            "Mid": 353,
+            "Max": 460
+        },
+        "1992": {
+            "Min": 355,
+            "Mid": 343,
+            "Max": 445
+        },
+        "1993": {
+            "Min": 345,
+            "Mid": 333,
+            "Max": 430
+        },
+        "1994": {
+            "Min": 335,
+            "Mid": 323,
+            "Max": 415
+        },
+        "1995": {
+            "Min": 325,
+            "Mid": 313,
+            "Max": 400
+        },
+        "1996": {
+            "Min": 315,
+            "Mid": 303,
+            "Max": 385
+        },
+        "1997": {
+            "Min": 305,
+            "Mid": 293,
+            "Max": 370
+        },
+        "1998": {
+            "Min": 295,
+            "Mid": 283,
+            "Max": 355
+        },
+        "1999": {
+            "Min": 285,
+            "Mid": 273,
+            "Max": 340
+        },
+        "2000": {
+            "Min": 275,
+            "Mid": 263,
+            "Max": 325
+        },
+        "2001": {
+            "Min": 275,
+            "Mid": 263,
+            "Max": 325
+        },
+        "2002": {
+            "Min": 275,
+            "Mid": 263,
+            "Max": 325
+        },
+        "2003": {
+            "Min": 275,
+            "Mid": 263,
+            "Max": 325
+        },
+        "2004": {
+            "Min": 275,
+            "Mid": 263,
+            "Max": 325
+        },
+        "2005": {
+            "Min": 275,
+            "Mid": 263,
+            "Max": 325
+        },
+        "2006": {
+            "Min": 275,
+            "Mid": 263,
+            "Max": 325
+        },
+        "2007": {
+            "Min": 275,
+            "Mid": 263,
+            "Max": 325
+        },
+        "2008": {
+            "Min": 275,
+            "Mid": 263,
+            "Max": 325
+        },
+        "2009": {
+            "Min": 275,
+            "Mid": 263,
+            "Max": 325
+        },
+        "2010": {
+            "Min": 275,
+            "Mid": 263,
+            "Max": 325
+        }
+    },
+    "Pressure profile probability": {
+        "Probability": {
+            "Min": 0.3,
+            "Mid": 0.4,
+            "Max": 0.3
+        }
+    },
+    "Points": {
+        "X": {
+            "S235": 215001,
+            "S146": 220001
+        },
+        "Y": {
+            "S235": 567600,
+            "S146": 568300
+        }
+    },
+    "Observations": {
+        "Observation ID": {
+            "0": "S235",
+            "1": "S235",
+            "2": "S235",
+            "3": "S235",
+            "4": "S146",
+            "5": "S146",
+            "6": "S146",
+            "7": "S146",
+            "8": "S146",
+            "9": "S146"
+        },
+        "Time": {
+            "0": "1990-04-03 00:00:00",
+            "1": "1991-04-06 00:00:00",
+            "2": "1993-04-10 00:00:00",
+            "3": "1995-04-13 00:00:00",
+            "4": "1990-12-25 00:00:00",
+            "5": "1991-12-28 00:00:00",
+            "6": "1994-01-01 00:00:00",
+            "7": "1996-01-04 00:00:00",
+            "8": "2000-01-01 00:00:00",
+            "9": "2004-01-01 00:00:00"
+        },
+        "X": {
+            "0": 215001,
+            "1": 215001,
+            "2": 215001,
+            "3": 215001,
+            "4": 220001,
+            "5": 220001,
+            "6": 220001,
+            "7": 220001,
+            "8": 220001,
+            "9": 220001
+        },
+        "Y": {
+            "0": 567600,
+            "1": 567600,
+            "2": 567600,
+            "3": 567600,
+            "4": 568300,
+            "5": 568300,
+            "6": 568300,
+            "7": 568300,
+            "8": 568300,
+            "9": 568300
+        },
+        "Subsidence (m)": {
+            "0": 0.0001,
+            "1": 0.0025,
+            "2": 0.00875,
+            "3": 0.01,
+            "4": 0.0002,
+            "5": 0.005,
+            "6": 0.0175,
+            "7": 0.02,
+            "8": 0.036,
+            "9": 0.04
+        },
+        "Lower error (m)": {
+            "0": 0.0025,
+            "1": 0.0025,
+            "2": 0.0025,
+            "3": 0.0025,
+            "4": 0.0025,
+            "5": 0.0025,
+            "6": 0.0025,
+            "7": 0.0025,
+            "8": 0.0025,
+            "9": 0.0025
+        },
+        "Upper error (m)": {
+            "0": 0.0025,
+            "1": 0.0025,
+            "2": 0.0025,
+            "3": 0.0025,
+            "4": 0.0025,
+            "5": 0.0025,
+            "6": 0.0025,
+            "7": 0.0025,
+            "8": 0.0025,
+            "9": 0.0025
+        }
+    },
+    "Lists": {
+        "nucleus of strain": {
+            "ratetype": "knothe",
+            "time decay": NaN
+        }
+    }
+}
