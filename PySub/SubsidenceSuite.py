@@ -1968,8 +1968,11 @@ class ModelSuite:
             print('Calculating compaction.')
             result = {}
             for model in tqdm(self._models):
-                value = model.calculate_compaction(_print = False)
-                result[model.name] = value
+                if hasattr(model, 'calculate_compaction'):
+                    value = model.calculate_compaction(_print = False)
+                    result[model.name] = value
+                else:
+                    result[model.name] = np.nan
             print('Calculated compaction.')
             return result
         

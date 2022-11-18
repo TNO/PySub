@@ -131,7 +131,7 @@ def get_polygon(fname):
         
     return geometries, crs
 
-def save_raster(data, x, y, dx, dy, epsg, fname):
+def save_raster(data, x, y, dx, dy, epsg, fname, fileformat = "GTiff"):
     """Save 2D, 3D, or 4D data is tiff files. 2D data will be stored as
     a tiff file with 1 band, 3D data as multibanded tiff and 4D data will 
     be stacked to fit multibanded data.
@@ -176,7 +176,6 @@ def save_raster(data, x, y, dx, dy, epsg, fname):
     srs = osr.SpatialReference()
     srs.SetFromUserInput(f"EPSG:{epsg}")
     
-    fileformat = "GTiff"
     driver = gdal.GetDriverByName(fileformat)
     dst_ds = driver.Create(fname, xsize=transposed_data.shape[2], ysize=transposed_data.shape[1],
                     bands=transposed_data.shape[0], eType=gdal.GDT_Byte)
@@ -207,7 +206,7 @@ def load_raster(fname, layer = None):
         The x-cordinates of all raster nodes.
     y : 2D np.ndarray, floats
         The y-cordinates of all raster nodes.
-
+    crs : wkt crs as string
     """
     # src = rasterio.open(fname)
     # crs = src.crs.wkt if src.crs is not None else None

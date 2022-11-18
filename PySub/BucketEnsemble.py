@@ -4,16 +4,17 @@
 import numpy as np
 import xarray as xr
 import pandas as pd
+import random
+from tqdm import tqdm
+import csv
+import os
 from PySub import SubsidenceModelGas as _SubsidenceModelGas
 from PySub import SubsidenceKernel as _SubsidenceKernel
 from PySub import utils as _utils
 from PySub import memory as _memory
 from PySub import Geometries as _Geometries
-import random
-from tqdm import tqdm
-from time import time
-import json
-import csv
+
+
 
 class VariableBuckets(dict):
     """Object to store values of variables and their probability for being sampled.
@@ -357,7 +358,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
         
         self.set_compaction_model()
         self.mask_reservoirs()
-        self.assign_compaction_parameters()
+        
         return sampled, indices
      
     def setup_writer(self, write_file, probability = True):
@@ -461,7 +462,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
         
         self.set_compaction_model()
         self.mask_reservoirs()
-        self.assign_compaction_parameters()  
+        
     
     def move_through_list(self, i, l):
         amount_of_samples =  _utils.non_zero_prod(l)
@@ -539,7 +540,6 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
         self._set(pruned_run_values)
         self.set_compaction_model()
         self.mask_reservoirs()
-        self.assign_compaction_parameters()
         return probabilities, pruned_run_values, choises
         
     
@@ -650,7 +650,11 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
             The error values for each realisation.
 
         """
-        self.parameter_file = self.project_folder.output_file('run_parameters.csv')
+        self.parameter_file = (
+            'run_parameters.csv'
+            if self.project_folder.project_folder is None else 
+            self.project_folder.output_file('run_parameters.csv')
+            )
         with open(self.parameter_file, 'w') as _:
             pass 
         with open(self.parameter_file, 'a') as write_file:
@@ -685,6 +689,8 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
                         max_results.append(maximum_subsidence)
                         self.store_samples(i, parameters, indices, maximum_subsidence, probability=None)
                         progress_bar.update()
+                        
+        
         return max_results, error
     
     def _mask_parameters(self, mask_array, parameter):
