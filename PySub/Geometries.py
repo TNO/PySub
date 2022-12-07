@@ -3,7 +3,8 @@
 to grid data and plot this data.
 """
 import os
-from matplotlib.patches import Polygon
+from descartes import PolygonPatch
+import descartes
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -14,6 +15,7 @@ from PySub import utils as _utils
 from PySub import grid_utils as _grid_utils
 from PySub import shape_utils as _shape_utils
 from osgeo import osr
+from shapely import geometry
 
 class GeometryPoint(_Points.Point):
     def __init__(self, x, y, kwargs):
@@ -116,11 +118,13 @@ class GeometryRaster():
         xs = self.X[np.where(self.values > 0)]
         ys = self.Y[np.where(self.values > 0)]
         return np.mean(xs), np.mean(ys)
-    
+
+
+
 class GeometryPolygon():
     def __init__(self, shapes, kwargs):
         self.type = 'polygon'
-        self.shapes = np.array([np.array(shape).astype(float) for shape in shapes])
+        self.shapes = shapes
         self.kwargs = kwargs
         
     def _representative_parameters(self):
@@ -136,14 +140,25 @@ class GeometryPolygon():
         for geom in self.shapes:
             if kwargs is None:
                 kwargs = self.kwargs
-            p = Polygon(geom, closed = True, **kwargs)
+            p = PolygonPatch(geom.buffer(0), **kwargs)
             ax.add_patch(p) 
-            
+    
+    def contains_points(X, Y, shape):
+        return shape.contains(
+            geometry.Point(X, Y)
+            )
+    
     def mask(self, grid):
         mask = np.zeros((grid.dims['y'], grid.dims['x']))
+        mask = mask > 0
         for shape in self.shapes:
-            mask += _grid_utils.get_mask_from_shp(shape, grid.x, grid.y)
-        return mask > 0
+            exterior, interiors = _shape_utils.extract_poly_coords(shape)
+            is_in_exteriors = _grid_utils.get_mask_from_shp(exterior, grid.x, grid.y)
+            mask = mask | is_in_exteriors 
+            for interior in interiors:
+                is_in_interior = _grid_utils.get_mask_from_shp(exterior, grid.x, grid.y)
+                mask = mask & ~is_in_interior
+        return mask 
     
     def in_bound(self, bounds, dx):
         if bounds is not None:
@@ -156,8 +171,8 @@ class GeometryPolygon():
     def bounds(self):
         bound_collection = []
         for shape in self.shapes:
-            x, y = np.array(shape).T
-            bound_collection.append(_utils.bounds_from_xy(x, y))
+            bound = np.array(shape.bounds)
+            bound_collection.append(bound)
         bound_collection = np.array(bound_collection)
         bounds = _utils.bounds_from_bounds_collection(bound_collection)
         return bounds

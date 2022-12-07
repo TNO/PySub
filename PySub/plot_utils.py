@@ -338,6 +338,14 @@ def get_background(extent, fig = None, ax = None, basemap = True, service = 'ope
     else:
         fig = fig
     fig.set_size_inches(figsize)
+    x_ticks = np.array(ax.get_xticks())
+    x_ticks = x_ticks[(x_ticks < extent[0]) & (x_ticks > extent[2])]
+    y_ticks = np.array(ax.get_yticks())
+    y_ticks = y_ticks[(y_ticks < extent[1]) & (y_ticks > extent[3])]
+    
+    ax.set_xticks(ax.get_xticks(), ccrs.epsg(epsg))
+    ax.set_yticks(ax.get_yticks(), ccrs.epsg(epsg))
+    
     add_background(ax = ax, service = service, layer = layer, epsg = epsg)
     
     
