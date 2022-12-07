@@ -15,7 +15,19 @@ import numpy as np
 import pandas as pd
 
 
-def ogr_polygon(coords):          
+def ogr_polygon(coords):       
+    """Make a polygon of the ogr.Geometry type Polygon.
+
+    Parameters
+    ----------
+    coords : array-like
+        2D array-like object with the shape (2, m), where 2 is for the x- and 
+        y-coordinates and m is the number of points that define the polygon.
+
+    Returns
+    -------
+    ogr.Polygon
+    """
     ring = ogr.Geometry(ogr.wkbLinearRing)
     for coord in coords:
         ring.AddPoint(coord[0], coord[1])
@@ -24,6 +36,45 @@ def ogr_polygon(coords):
     poly = ogr.Geometry(ogr.wkbPolygon)
     poly.AddGeometry(ring)
     return poly.ExportToWkt()
+
+def extract_poly_coords(geom):
+    """Extract the relevant coordinates of a shapely geometry
+
+    Parameters
+    ----------
+    geom : shapely.geometry type
+        The polygon
+    
+    Returns
+    -------
+    exterior_coords: 2D np.ndarray
+        an m by 2 shaped numpy array with the cordinates of the points that
+        form the outside rim of the polygon.
+    interior_coords: list of 2D numpy arrays
+        If the polygon has holes in it, it is defined 
+        through these coordinates. The list contains a 2D np.ndarray with the
+        shape (m, 2) for each hole in the polygon.
+
+    Source
+    ------
+    https://stackoverflow.com/questions/21824157/how-to-extract-interior-polygon-coordinates-using-shapely
+    """
+    if geom.type == 'Polygon':
+        exterior_coords = geom.exterior.coords[:]
+        interior_coords = []
+        for interior in geom.interiors:
+            interior_coords += interior.coords[:]
+    elif geom.type == 'MultiPolygon':
+        exterior_coords = []
+        interior_coords = []
+        for part in geom:
+            epc = extract_poly_coords(part)  # Recursive call
+            exterior_coords += epc['exterior_coords']
+            interior_coords += epc['interior_coords']
+    else:
+        raise ValueError('Unhandled geometry type: ' + repr(geom.type))
+    return (np.array(exterior_coords), 
+            [np.array(i) for i in interior_coords])
 
 def save_polygon(geometries, fname, epsg, fields = None):
     """Makes a shapefile without any properties from a list of list of coordinates.
@@ -125,9 +176,11 @@ def get_polygon(fname):
     geometries = []
     for s in shapes:
         geo_json = s.shape.__geo_interface__
-        geometry = geo_json['coordinates'] 
-        for g in geometry:
-            geometries.append(g)
+        shape = geometry.shape(geo_json)
+        if geo_json['type'] == 'MultiPolygon':
+            geometries = geometries + list(shape)
+        else:
+            geometries.append(shape)
         
     return geometries, crs
 
@@ -221,7 +274,7 @@ def load_raster(fname, layer = None):
     else:
         data = src.GetRasterBand(layer).ReadAsArray()
     data = data[None, :, :]
-    ulx, xres, xskew, uly, yskew, yres  = src.GetGeoTransform()
+    ulx, xres, xskew, uly, yskew, yres = src.GetGeoTransform()
     lrx = ulx + (src.RasterXSize * xres + xres/2)
     lry = uly + (src.RasterYSize * yres + yres/2)
     x = np.linspace(ulx, lrx, src.RasterXSize)
