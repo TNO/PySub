@@ -541,8 +541,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
         self.set_compaction_model()
         self.mask_reservoirs()
         return probabilities, pruned_run_values, choises
-        
-    
+
     
     def calculate_deterministic(self, iterations = None, error_method = 'mae', all_timesteps = False):
         # Get the amount of runs
@@ -554,14 +553,13 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
                 _utils.non_zero_prod(self.amount_of_options[key])
                 for key, reservoir in self.amount_of_options.items()}    
     
-        total_runs = _utils.non_zero_prod(self.amount_of_runs_per_reservoir.values())
+        total_runs = np.prod(list(self.amount_of_runs_per_reservoir.values()))
         
             
         probabilities = []
         max_results = []
         error = []
-        if iterations is None:
-                    
+        if iterations is None:                 
             # Setup and work in parameter tracking file
             self.parameter_file = self.project_folder.output_file('run_parameters.csv')
             with open(self.parameter_file, 'w') as _:

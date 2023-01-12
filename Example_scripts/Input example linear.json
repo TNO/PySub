@@ -31,9 +31,9 @@
             "Een": 6500
         },
 		"Poisson's ratio (-)": {
-            "Norg": 0.2,
-            "Allardsoog": 0.2,
-            "Een": 0.2
+            "Norg": 0.25,
+            "Allardsoog": 0.25,
+            "Een": 0.25
         },
         "Depth to reservoir (m)": {
             "Norg": 3000,

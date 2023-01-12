@@ -36,7 +36,19 @@ class ProjectFolder(object):
             self.project_folder = folder
         else:
             raise Exception(f"Invalid input type: {type(folder)}. Use a string representing a path.")
-        
+    
+    @property
+    def input_folder(self):
+        return self._get_folder('input')
+    
+    @property
+    def output_folder(self):
+        return self._get_folder('output')
+    
+    @property
+    def save_folder(self):
+        return self._get_folder('save')
+    
     def __repr__(self):
         return self.__str__()
     
@@ -71,7 +83,7 @@ class ProjectFolder(object):
                     file_name = rename
                 shutil.copyfile(file, self.input_file(file_name + ext))
             else:
-                raise Exception(f'Invalid file. Cannot copy.')
+                raise Exception('Invalid file. Cannot copy.')
             
     def move(self, new_folder):
         """Copy all the files in the project tree to a new location
@@ -92,11 +104,14 @@ class ProjectFolder(object):
     def _get_file(self, name, folder):
         if os.path.isdir(os.path.dirname(name)):
             return name
-        if not hasattr(self, f'{folder}_folder') and self.project_folder is not None:
-            self.make_folder(folder)
+        self._get_folder(folder)
         if self.project_folder is not None:
             return os.path.join(getattr(self, f'{folder}_folder'), name)
     
+    def _get_folder(self, folder):
+        if self.project_folder is not None:
+            return os.path.join(self.project_folder, folder)
+        
     def input_file(self, name):
         """Get the path for a file in the input folder, given the name of the file.
 

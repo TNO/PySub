@@ -2,27 +2,31 @@
 """plot tools
 """
 import os
+import xml
+import string
+import warnings
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
 import matplotlib.patheffects as pe
-from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+import matplotlib.font_manager as fm
+import cartopy.io.img_tiles as cimgt
+
 from matplotlib import cm
-from matplotlib.patches import Polygon, Patch
-from matplotlib.lines import Line2D
-from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
+from warnings import warn
 from cartopy import crs as ccrs
-import xml
+from adjustText import adjust_text
+from matplotlib.lines import Line2D
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+from matplotlib.patches import Polygon, Patch
+from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 from PySub import utils as _utils
-from PySub.WMTS_utils import OpenTopoAchtergrondKaart, BrtAchtergrondKaart, LuchtFoto, WMTS, other_WMTS
+from PySub import WMTS_utils as _WMTS_utils
 from PySub import Points as _Points
 from PySub.SubsidenceSuite import ModelSuite as _ModelSuite
-import string
-from adjustText import adjust_text
 
-import warnings
-from warnings import warn
+
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -231,64 +235,114 @@ def plot_probability_distribution(Model, values, probabilities = None, unit = 'c
     else:
         raise Exception(f'Invalid input type: {type(p)}')
 
-def add_background(ax = None, basemap = True, service = 'opentopo', layer = 'opentopoachtergrondkaart', epsg = 28992):
+
+def adjust_background_url(url):
+    if url is not None:
+        required = ['{x}', '{y}', '{z}']
+        if not all(k in url for k in required):
+            raise Exception(
+                'URL pointing to a tile source must contain {x}, {y}, and {z}.'
+                )
+        _WMTS_utils.__dict__['URL'] = url
+    
+    
+def adjust_background_keywords(keywords):
+    if keywords is not None:
+        if not isinstance(keywords, dict):
+            raise Exception(
+                "Argument keywords must be a dictionary. Current argument is of " 
+                f"type {type(keywords)}"
+                )
+    
+        _WMTS_utils.__dict__['URL_KEYWORD_DICT'] = keywords
+
+
+def adjust_background(url = None, 
+                      keywords = {},
+                      arcgis_service = None,
+                      google_service = None):
+    """Set formatted text as the url at which the tiles will be fetched from.
+    default can be set by:
+        adjust_background(arcgis_service = 'World_Topo_Map')
+
+    Parameters
+    ----------
+    url : string, optional
+    Use only if not using standard arcgis or google services!
+        URL pointing to a tile source and containing {x}, {y}, and {z}.
+        Such as: 'https://server.arcgisonline.com/ArcGIS/rest/services/\
+            World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}.jpg'
+        Note that the string must not be formatted. Additional keywords can be 
+        added. Such as: 'https://server.arcgisonline.com/ArcGIS/rest/services/\
+            {map_service}/MapServer/tile/{z}/{y}/{x}.jpg'
+        When other keywords are added than {x}, {y}, and {z}, add the keywords 
+        by setting the "keywords" argument as for instance:
+            keywords = {'map_service': 'World_Shaded_Relief'}
+            
+        Examples:
+            arcgis service url: ('https://server.arcgisonline.com/ArcGIS/rest/'
+                'services/{map_service}/MapServer/tile/{z}/{y}/{x}.jpg')
+            google service url: ('https://mts0.google.com/vt/lyrs={map_service}'
+                      '@177000000&hl=en&src=api&x={x}&y={y}&z={z}&s=G')
+    keywords : dict, optional
+    Use only if not using standard arcgis or google services!
+        When other keywords are added to the url (other than than {x}, {y}, 
+        and {z}), add the keywords by setting this argument as for instance:
+            keywords = {'map_service': 'World_Shaded_Relief'}
+    arcgis_service: string, optional
+        https://server.arcgisonline.com/ArcGIS/rest/services/
+        For instance (the default is):
+            adjust_background(arcgis_service = 'World_Topo_Map')
+    google_service: string, optional
+        Choose from: "street", "satellite", "terrain", "only_streets"
+        For instance (the default is):
+            adjust_background(arcgis_service = 'only_street')
+
+    """
+    default_keywords = _WMTS_utils.__dict__['URL_KEYWORD_DICT']
+    keywords = set_defaults(keywords, defaults = default_keywords)
+    if arcgis_service is not None:
+        url = ('https://server.arcgisonline.com/ArcGIS/rest/services/'
+               '{map_service}/MapServer/tile/{z}/{y}/{x}.jpg')
+        keywords['map_service'] = arcgis_service
+        adjust_background_keywords(keywords)
+    elif google_service is not None:
+        url = ('https://mts0.google.com/vt/lyrs={map_service}'
+               '@177000000&hl=en&src=api&x={x}&y={y}&z={z}&s=G')
+        styles = ["street", "satellite", "terrain", "only_streets"]
+        if google_service not in styles:
+            raise ValueError(
+                f"The {google_service} service does not exist. "
+                f"Choose from {styles}"
+                )
+        style_dict = {
+            "street": "m",
+            "satellite": "s",
+            "terrain": "t",
+            "only_streets": "h"}
+        keywords['map_service'] = style_dict[google_service]
+    
+    adjust_background_url(url)
+    adjust_background_keywords(keywords)
+    
+def add_background(ax = None, zoom_level = 10):
     """Add a WMTS map background to an existing figure.
 
     Parameters
     ----------
-    extent : list, int/float
-            List with 4 values representing the extend of the figure
-            of the model grid:
-            [0] lower x
-            [1] lower y
-            [2] upper x
-            [3] upper y..
     ax : a matpltlib.pyplot.Ax or cartopy.mpl.geoaxes.GeoAxesSubplot object
-    basemap : bool, optional
-        The default is True.
-    basemap : bool, optional
-        The default is True. When True, will plot a WMTS as background. When 
-        False, not.
-    service : str, optional
-        The type of map plotted behind the reservoir data. 
-        The default is 'opentopo'. Available services:
-            - opentopo
-            - luchtfoto
-            - brtachtergrondkaart (# TODO: plot alleen wit...)
-    espg : int, optional
-        Coordinate system. The default is 28992.
+    zoom_level : int, optional
+        An integer indicating the zoom level for the maps. Low numbers
+        show maps on a large scale, higher numbers show maps on a smaller
+        scale.
     """
-    if basemap:
-        try:
-            try:
-                other_WMTS(ax, service, layer)
-            except:
-                if service.lower() == 'brtachtergrondkaart':
-                    try: brt = BrtAchtergrondKaart(ax = ax, layer = layer, epsg = epsg)
-                    except: brt = BrtAchtergrondKaart(ax = ax, layer = 'standaard', epsg = epsg)
-                    brt.plot()
-                elif service.lower() == 'opentopo':
-                    try: ot = OpenTopoAchtergrondKaart(ax = ax, layer = layer, epsg = epsg)
-                    except: ot = OpenTopoAchtergrondKaart(ax = ax, layer = 'opentopoachtergrondkaart')
-                    ot.plot()
-                elif service.lower() == 'luchtfoto':
-                    try: lf = LuchtFoto(ax = ax, layer = layer, epsg = epsg)
-                    except: lf = LuchtFoto(ax = ax, layer = 'Actueel_ortho25')
-                    lf.plot()
-                else:
-                    try:
-                        background = WMTS(url = service, layer = layer, epsg = epsg)
-                        background.plot()
-                    except:
-                        raise(Exception(f'Service {service}, {layer} not available.'))
-        except:
-            warn("Warning: No connection with WMTS/EPSG, failed to plot a map.")
-
+    ax.add_image(_WMTS_utils.Tiles('RGBA'), zoom_level)
+    
 def get_crs(epsg):
     crs = ccrs.epsg(epsg)
     return crs
 
-def get_background(extent, fig = None, ax = None, basemap = True, service = 'opentopo', layer = 'opentopoachtergrondkaart', figsize=(8, 8), epsg = 28992):
+def get_background(extent, fig = None, ax = None, basemap = True, zoom_level = 10, figsize=(8, 8), epsg = 28992):
     """Create a figure and axis with a certain extent with the possibility to
     add a WMTS map background.
 
@@ -304,18 +358,14 @@ def get_background(extent, fig = None, ax = None, basemap = True, service = 'ope
     fig : a matpltlib.pyplot.Figure object
     ax : a matpltlib.pyplot.Ax or cartopy.mpl.geoaxes.GeoAxesSubplot object
     basemap : bool, optional
-        The default is True.
-    basemap : bool, optional
-        The default is True. When True, will plot a WMTS as background. When 
+        The default is True. When True, will plot a WMTS as background. When
         False, not.
-    service : str, optional
-        The type of map plotted behind the reservoir data. 
-        The default is 'opentopo'. Available services:
-            - opentopo
-            - luchtfoto
-            - brtachtergrondkaart (# TODO: plot alleen wit...)
-    figsize : tuple, float/int, optional
-        The figure size in inches. The default is (8, 8).
+    zoom_level : int, optional
+        An integer indicating the zoom level for the maps. Low numbers
+        show maps on a large scale, higher numbers show maps on a smaller
+        scale.
+    figsize : tuple, int/float, optional
+        The size of the image in inches
     espg : int, optional
         Coordinate system. The default is 28992.
 
@@ -345,8 +395,8 @@ def get_background(extent, fig = None, ax = None, basemap = True, service = 'ope
     
     ax.set_xticks(ax.get_xticks(), ccrs.epsg(epsg))
     ax.set_yticks(ax.get_yticks(), ccrs.epsg(epsg))
-    
-    add_background(ax = ax, service = service, layer = layer, epsg = epsg)
+    if basemap:
+        add_background(ax = ax, zoom_level = zoom_level)
     
     
     return fig, ax
@@ -1180,7 +1230,8 @@ def plot_2D_data(extent, x = None, y = None, data = None,
                  contour_levels = None, contour_steps = 0.01, title = None,
                  geometries = [],
                  basemap = True, 
-                 service = 'opentopo', layer = 'opentopoachtergrondkaart', epsg = 28992,
+                 zoom_level = 10,
+                 epsg = 28992,
                  shape_kwargs = {},
                  contourf_kwargs = {},
                  contour_kwargs = {},
@@ -1226,13 +1277,10 @@ def plot_2D_data(extent, x = None, y = None, data = None,
     basemap : bool, optional
         The default is True. When True, will plot a WMTS as background. When 
         False, not.
-    service : str, optional
-        The type of map plotted behind the reservoir data. 
-        The default is 'opentopo'. Available services:
-            - opentopo
-            - luchtfoto
-    layer : str, optional
-        The WMTS layer
+    zoom_level : int, optional
+        An integer indicating the zoom level for the maps. Low numbers
+        show maps on a large scale, higher numbers show maps on a smaller
+        scale.
     espg : int, optional
         Coordinate system. The default is 28992.
     shape_kwargs : dict, optional
@@ -1265,7 +1313,7 @@ def plot_2D_data(extent, x = None, y = None, data = None,
     fig, ax
     """
 
-    fig, ax = get_background(extent, basemap = basemap, service = service, layer = layer, epsg = epsg)
+    fig, ax = get_background(extent, basemap = basemap, zoom_level = zoom_level, epsg = epsg)
     fig.set_size_inches(figsize)
     
     add_geometries(ax, geometries = geometries,
@@ -1293,7 +1341,8 @@ def plot_3D_data(extent, x, y, data,
                  contour_levels = None, contour_steps = 0.01, title = None,
                  geometries = [],
                  basemap = True, 
-                 service = 'opentopo', layer = 'opentopoachtergrondkaart', epsg = 28992,
+                 zoom_level = 10,
+                 epsg = 28992,
                  shape_kwargs = {},
                  contourf_kwargs = {},
                  contour_kwargs = {},
@@ -1340,14 +1389,10 @@ def plot_3D_data(extent, x, y, data,
     basemap : bool, optional
         The default is True. When True, will plot a WMTS as background. When 
         False, not.
-    service : str, optional
-        The type of map plotted behind the reservoir data. 
-        The default is 'opentopo'. Available services:
-            - opentopo
-            - luchtfoto
-            - brtachtergrondkaart (# TODO: plot alleen wit...)
-    layer : str, optional
-        The WMTS layer
+    zoom_level : int, optional
+        An integer indicating the zoom level for the maps. Low numbers
+        show maps on a large scale, higher numbers show maps on a smaller
+        scale.
     espg : int, optional
         Coordinate system. The default is 28992.
     shape_kwargs : dict, optional
@@ -1406,7 +1451,7 @@ def plot_3D_data(extent, x, y, data,
         else:
             ax.set_extent(extent, crs=crs)
         
-        add_background(ax = ax, basemap = basemap, service = service, layer = layer, epsg = epsg)
+        add_background(ax = ax, zoom_level = zoom_level)
         ax.axis('off')
         add_geometries(ax, geometries = geometries[i],
                        scatter_kwargs = scatter_kwargs, shape_kwargs = shape_kwargs, raster_kwargs = raster_kwargs)
@@ -1572,7 +1617,6 @@ def seperate_colors_from_dict(plot_kwargs, number_of_entries):
     return c, adjusted_kwargs
 
 def get_2D_data_from_model(Model, reservoir = None, time = -1, variable = 'subsidence', unit = 'cm'):
-    data = np.zeros(shape = (Model.ny, Model.nx))
     array = Model[variable]
     
     data_coords = list(array.coords)
@@ -1588,14 +1632,17 @@ def get_2D_data_from_model(Model, reservoir = None, time = -1, variable = 'subsi
         if coord == 'time':
             step = time_entry_to_index(Model, time, _2d = True)
             
-            selection_dict[coord] = step
+            selection_dict[coord] = step[0]
     
-    data3D = array.isel(selection_dict)
+    data3D = array.isel(selection_dict, drop = True).transpose('y', 'x', ...)
+    
     if 'reservoir' in data_coords:
-        data3D = data3D.sum(dim = 'reservoir')
-    data3D = _utils.convert_SI(data3D, 'm', unit)
-    data3D = np.array(data3D)
-    data = data3D.reshape(data.shape)  
+        data = data3D.sum(dim = 'reservoir')
+    else:
+        data = data3D
+    data = _utils.convert_SI(data, 'm', unit)
+    data = np.array(data)
+    
     return data
 
 def get_transient_data_from_model(Model, reservoir = None, time = -1, variable = 'subsidence', unit = 'cm'):
@@ -1625,26 +1672,28 @@ def get_transient_data_from_model(Model, reservoir = None, time = -1, variable =
     
     return data
 
-def plot_subsidence_model(Model, reservoir = None, time = -1, buffer = 0, 
-                          variable = 'subsidence',
-                          unit = 'cm',
-                    plot_reservoir_shapes = True, 
-                    additional_shapes = [],
-                    service = 'opentopo', layer = 'opentopoachtergrondkaart', figsize=(8, 8), epsg = 28992,
-                    contour_levels = None, 
-                    contour_steps = 0.01, 
-                    title = None,
-                    final = True,
-                    fname = 'subsidence',
-                    svg = False,
-                    shape_kwargs = {},
-                    raster_kwargs = {},
-                    contourf_kwargs = {},
-                    contour_kwargs = {},
-                    clabel_kwargs = {},
-                    colorbar_kwargs = {},
-                    scatter_kwargs = {},
-                    ):
+def plot_subsidence_model(
+        Model, reservoir=None, time=-1, buffer=0,
+        variable='subsidence',
+        unit='cm',
+        plot_reservoir_shapes=True,
+        additional_shapes=[],
+        zoom_level=10,
+        figsize=(8, 8), epsg=28992,
+        contour_levels=None,
+        contour_steps=0.01,
+        title=None,
+        final=True,
+        fname='subsidence',
+        svg=False,
+        shape_kwargs={},
+        raster_kwargs={},
+        contourf_kwargs={},
+        contour_kwargs={},
+        clabel_kwargs={},
+        colorbar_kwargs={},
+        scatter_kwargs={},
+        ):
     shape_kwargs = set_defaults(shape_kwargs, defaults = Model.shape_defaults)
     contourf_kwargs = set_defaults(contourf_kwargs, defaults = Model.contourf_defaults)
     contour_kwargs = set_defaults(contour_kwargs, defaults = Model.contour_defaults)
@@ -1684,7 +1733,7 @@ def plot_subsidence_model(Model, reservoir = None, time = -1, buffer = 0,
         fig, ax = plot_2D_data(Model.extent, Model.x, Model.y, data, 
                                geometries = geometries, 
                                title = title, 
-                               service = service, layer = layer, figsize=figsize, epsg = epsg,
+                               zoom_level=zoom_level, figsize=figsize, epsg = epsg,
                                contour_levels = contour_levels, 
                                contour_steps = contour_steps, 
                                shape_kwargs = shape_kwargs,
@@ -1711,7 +1760,8 @@ def plot_subsidence_suite(Suite, reservoir = None, time = -1, buffer = 0, model 
                           unit = 'cm',
                           plot_reservoir_shapes = True,
                           additional_shapes = [],
-                          service = 'opentopo', layer = 'opentopoachtergrondkaart', figsize=(8, 8), epsg = 28992,
+                          zoom_level = 10,
+                          figsize=(8, 8), epsg = 28992,
                           contour_levels = None, 
                           contour_steps = 0.01, 
                           title = None,
@@ -1764,8 +1814,8 @@ def plot_subsidence_suite(Suite, reservoir = None, time = -1, buffer = 0, model 
             contour_steps = _utils.convert_SI(np.array(contour_steps), 'm', unit)  
         fig, ax = plot_3D_data(extent, x, y, data, 
                                geometries = geometries, 
-                               title = titles, 
-                               service = service, layer = layer, figsize=figsize, epsg = epsg,
+                               title = titles, zoom_level = zoom_level,
+                               figsize=figsize, epsg = epsg,
                                contour_levels = contour_levels, 
                                contour_steps = contour_steps, 
                                shape_kwargs = shape_kwargs,
@@ -1790,7 +1840,7 @@ def plot_subsidence(Model, reservoir = None, time = -1, buffer = 0, model = None
                     unit = 'cm',
                     plot_reservoir_shapes = True, 
                     additional_shapes = [],
-                    service = 'opentopo', layer = 'opentopoachtergrondkaart', figsize=(8, 8), epsg = 28992,
+                    zoom_level = 10, figsize=(8, 8), epsg = 28992,
                     contour_levels = None, 
                     contour_steps = 0.01, 
                     title = None,
@@ -1827,14 +1877,10 @@ def plot_subsidence(Model, reservoir = None, time = -1, buffer = 0, model = None
     additional_shapes : list of PySub.Gemetries objects
         A list if Geometries to plot inside the figures that are not the reservoirs.
         Use PySub.Geometries.fetch() to import plottable geometries as a list.
-    service : str, optional
-        The type of map plotted behind the reservoir data. 
-        The default is 'opentopo'. Available services:
-            - opentopo
-            - luchtfoto
-            - brtachtergrondkaart (# TODO: plot alleen wit...)
-    layer : str, optional
-        The layer of the WMTS to be used. default is "opentopoachtergrondkaart".
+    zoom_level : int, optional
+        An integer indicating the zoom level for the maps. Low numbers
+        show maps on a large scale, higher numbers show maps on a smaller
+        scale.
     figsize : tuple, float, optional
         The size of the figure in inches.
     epsg : int, optional
@@ -1910,7 +1956,7 @@ def plot_subsidence(Model, reservoir = None, time = -1, buffer = 0, model = None
                                      unit = unit,
                                      plot_reservoir_shapes = plot_reservoir_shapes,
                                      additional_shapes = additional_shapes,
-                                     service = service, layer = layer, figsize=figsize, epsg = epsg,
+                                     zoom_level = zoom_level, figsize=figsize, epsg = epsg,
                                      contour_levels = contour_levels, 
                                      contour_steps = contour_steps, 
                                      title = title,
@@ -1934,7 +1980,7 @@ def plot_subsidence(Model, reservoir = None, time = -1, buffer = 0, model = None
                                      unit = unit,
                                      plot_reservoir_shapes = plot_reservoir_shapes, 
                                      additional_shapes = additional_shapes,
-                                     service = service, layer = layer, figsize=figsize, epsg = epsg,
+                                     zoom_level = zoom_level, figsize=figsize, epsg = epsg,
                                      contour_levels = contour_levels, 
                                      contour_steps = contour_steps, 
                                      title = title,
@@ -1989,8 +2035,9 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class AskForLine():
     def __init__(self, Model, 
-                 service = 'opentopo', 
-                 layer = 'opentopoachtergrondkaart', 
+                 zoom_level = 10,
+                 plot_reservoir_shapes = True,
+                 additional_shapes = [],
                  figsize=(8, 8), epsg = 28992,
                  ):
         self.rows = 2
@@ -2003,8 +2050,9 @@ class AskForLine():
         # Figure
         self.fig, self.ax = plot_reservoirs(Model, 
                                   annotate = False,
-                                  final = False, 
-                                  service = service, layer = layer, figsize = figsize, epsg = epsg,
+                                  final = False, plot_reservoir_shapes=plot_reservoir_shapes,
+                                  additional_shapes = additional_shapes,
+                                  zoom_level = zoom_level, figsize = figsize, epsg = epsg,
                                   )
         
         # Bind the clicking action to the matplotlib figure canvas
@@ -2070,15 +2118,17 @@ class AskForLine():
           self.canvas.draw()
           
 def ask_for_line(Model, 
-                 service = 'opentopo', 
-                 layer = 'opentopoachtergrondkaart', 
+                 zoom_level = 10,
+                 plot_reservoir_shapes = True,
+                 additional_shapes = [],
                  figsize=(8, 8), epsg = 28992,
                  ):
     if _utils.is_iterable(Model): # If the entry is a list of Models
         list_of_models = Model    
         Model = _ModelSuite('', None)
         Model.set_models(list_of_models)
-    window = AskForLine(Model, service = service, layer = layer, figsize = figsize, epsg = epsg)
+    window = AskForLine(Model, zoom_level = zoom_level, figsize = figsize, epsg = epsg,
+                        plot_reservoir_shapes = plot_reservoir_shapes, additional_shapes=additional_shapes)
     Model.line = window.get_line()
     return Model.line
     
@@ -2087,7 +2137,7 @@ def plot_cross_section(Model, lines = None, variable = 'subsidence', reservoir =
                        num = 1000, 
                        plot_reservoir_shapes = True,
                        additional_shapes = [], 
-                       service = 'opentopo', layer = 'opentopoachtergrondkaart', figsize=(8, 8), epsg = 28992,
+                       zoom_level = 10, figsize=(8, 8), epsg = 28992,
                        cross_section_title = None, map_title = None,
                        contour_levels = None, 
                        contour_steps = 0.01, 
@@ -2144,14 +2194,10 @@ def plot_cross_section(Model, lines = None, variable = 'subsidence', reservoir =
     additional_shapes : list of PySub.Gemetries objects
         A list if Geometries to plot inside the figures that are not the reservoirs.
         Use PySub.Geometries.fetch() to import plottable geometries as a list.
-    service : str, optional
-        The type of map plotted behind the reservoir data. 
-        The default is 'opentopo'. Available services:
-            - opentopo
-            - luchtfoto
-            - brtachtergrondkaart (# TODO: plot alleen wit...)
-    layer : str, optional
-        The layer of the WMTS to be used. default is "opentopoachtergrondkaart".
+    zoom_level : int, optional
+        An integer indicating the zoom level for the maps. Low numbers
+        show maps on a large scale, higher numbers show maps on a smaller
+        scale.
     figsize : tuple, float, optional
         The size of the figure in inches.
     epsg : int, optional
@@ -2255,7 +2301,7 @@ def plot_cross_section(Model, lines = None, variable = 'subsidence', reservoir =
                 return
     
     if lines is None:
-        lines = ask_for_line(Model, service = service, layer = layer, figsize = figsize, epsg = epsg)
+        lines = ask_for_line(Model, zoom_level = zoom_level, figsize = figsize, epsg = epsg)
     elif not isinstance(lines, dict):
         line_dict = {string.ascii_uppercase[i % 26]: line for i, line in enumerate(lines)}
        
@@ -2311,7 +2357,7 @@ def plot_cross_section(Model, lines = None, variable = 'subsidence', reservoir =
                                   variable = variable,
                                   unit = unit,
                                   title = map_title, 
-                                  service = service, layer = layer, figsize=figsize, epsg = epsg,
+                                  zoom_level = zoom_level, figsize=figsize, epsg = epsg,
                                   contour_levels = contour_levels, 
                                   contour_steps = contour_steps, 
                                   plot_reservoir_shapes = plot_reservoir_shapes,
@@ -2397,7 +2443,7 @@ def plot_cross_section(Model, lines = None, variable = 'subsidence', reservoir =
                                   buffer = 0, 
                                    unit = unit,
                                    title = map_title, 
-                                   service = service, layer = layer, figsize=figsize, epsg = epsg,
+                                   zoom_level = zoom_level, figsize=figsize, epsg = epsg,
                                    contour_levels = contour_levels, 
                                    contour_steps = contour_steps, 
                                    plot_reservoir_shapes = plot_reservoir_shapes,
@@ -2426,7 +2472,7 @@ def plot_reservoirs(Model, reservoir = None, model = None,
                     buffer = 0, annotate = True, 
                     plot_reservoir_shapes = True,
                     additional_shapes = [], additional_labels = [],
-                    service = 'opentopo', layer = 'opentopoachtergrondkaart', figsize=(8, 8), epsg = 28992,
+                    zoom_level = 10, figsize=(8, 8), epsg = 28992,
                     final = True,
                     fname = 'reservoirs',
                     svg = False,
@@ -2461,14 +2507,10 @@ def plot_reservoirs(Model, reservoir = None, model = None,
     additional_labels : list of str
         A list of names of the additional shapes to be used as annotation in 
         the figure (if annotate is True)
-    service : str, optional
-        The type of map plotted behind the reservoir data. 
-        The default is 'opentopo'. Available services:
-            - opentopo
-            - luchtfoto
-            - brtachtergrondkaart (# TODO: plot alleen wit...)
-    layer : str, optional
-        The layer of the WMTS to be used. default is "opentopoachtergrondkaart".
+    zoom_level : int, optional
+        An integer indicating the zoom level for the maps. Low numbers
+        show maps on a large scale, higher numbers show maps on a smaller
+        scale.
     figsize : tuple, float, optional
         The size of the figure in inches.
     epsg : int, optional
@@ -2506,7 +2548,7 @@ def plot_reservoirs(Model, reservoir = None, model = None,
                           buffer = buffer, annotate = annotate, 
                           plot_reservoir_shapes = plot_reservoir_shapes,
                           additional_shapes = additional_shapes, additional_labels = additional_labels,
-                          service = service, layer = layer, figsize=figsize, epsg = epsg,
+                          zoom_level = zoom_level, figsize=figsize, epsg = epsg,
                           final = final, fname = fname, svg = svg,
                           shape_kwargs = shape_kwargs, raster_kwargs = raster_kwargs, 
                           scatter_kwargs = scatter_kwargs,
@@ -2516,7 +2558,7 @@ def plot_reservoirs(Model, reservoir = None, model = None,
                           buffer = buffer, annotate = annotate, 
                           plot_reservoir_shapes = plot_reservoir_shapes,
                           additional_shapes = additional_shapes, additional_labels = additional_labels,
-                          service = service, layer = layer, figsize=figsize, epsg = epsg,
+                          zoom_level = zoom_level, figsize=figsize, epsg = epsg,
                           final = final, fname = fname, svg = svg,
                           shape_kwargs = shape_kwargs, raster_kwargs = raster_kwargs, 
                           scatter_kwargs = scatter_kwargs,
@@ -2526,7 +2568,7 @@ def plot_reservoirs_suite(Suite, reservoir = None, model = None,
                     buffer = 0, annotate = True, 
                     plot_reservoir_shapes = True,
                     additional_shapes = [], additional_labels = [],
-                    service = 'opentopo', layer = 'opentopoachtergrondkaart', figsize=(8, 8), epsg = 28992, 
+                    zoom_level = 10, figsize=(8, 8), epsg = 28992, 
                     final = True,
                     fname = 'reservoirs',
                     svg = False,
@@ -2536,7 +2578,7 @@ def plot_reservoirs_suite(Suite, reservoir = None, model = None,
                     raster_kwargs = {},
                     scatter_kwargs = {}):     
     extent = extent_from_model(Suite, buffer)
-    fig, ax = get_background(extent, basemap = True, service = service, layer = layer, 
+    fig, ax = get_background(extent, basemap = True, zoom_level = zoom_level, 
                              figsize = figsize, epsg = epsg)
     model_index = Suite.model_label_to_index(model)
     for i, m in enumerate(Suite._models):
@@ -2581,7 +2623,7 @@ def plot_reservoirs_model(Model, reservoir = None,
                           buffer = 0, annotate = True, 
                           plot_reservoir_shapes = True,
                           additional_shapes = [], additional_labels = [],
-                          service = 'opentopo', layer = 'opentopoachtergrondkaart', figsize=(8, 8), epsg = 28992,
+                          zoom_level = 10, figsize=(8, 8), epsg = 28992,
                           final = True,
                           fname = 'reservoirs',
                           svg = False,
@@ -2598,10 +2640,10 @@ def plot_reservoirs_model(Model, reservoir = None,
     if plot_reservoir_shapes:
         if Model.hasattr('buckets'):
             reservoir_index = reservoir_entry_to_index(Model, reservoir)
-            geometries = [
-                Model.buckets[r]['shapes']['Values'] 
+            geometries = [Model.buckets[r]['shapes']['Values'] 
                 for i, r in enumerate(Model.reservoirs)
                 if i in reservoir_index]
+            geometries = _utils.flatten_ragged_lists2D(geometries)
         elif Model.hasattr('shapes'):
             reservoir_index = reservoir_entry_to_index(Model, reservoir)
             geometries = [Model.shapes[r] for r in reservoir_index]
@@ -2615,7 +2657,7 @@ def plot_reservoirs_model(Model, reservoir = None,
     fig, ax = plot_2D_data(Model.extent, Model.x, Model.y,  
                            data, 
                            geometries = geometries, 
-                           service = service, layer = layer, figsize=figsize, epsg = epsg,
+                           zoom_level = zoom_level, figsize=figsize, epsg = epsg,
                            shape_kwargs = shape_kwargs, raster_kwargs = raster_kwargs, scatter_kwargs = scatter_kwargs)
     
     if annotate:
@@ -2635,7 +2677,7 @@ def plot_points_on_map(Model, points = None, labels = None, reservoir = None, ti
                        unit = 'cm',
                        show_data = True, plot_reservoir_shapes = True, 
                        additional_shapes = [], 
-                       service = 'opentopo', layer = 'opentopoachtergrondkaart', figsize=(8, 8), epsg = 28992,
+                       zoom_level = 10, figsize=(8, 8), epsg = 28992,
                        contour_levels = None, 
                        contour_steps = 0.01, 
                        title = None,
@@ -2681,12 +2723,10 @@ def plot_points_on_map(Model, points = None, labels = None, reservoir = None, ti
     additional_shapes : list of PySub.Gemetries objects
         A list if Geometries to plot inside the figures that are not the reservoirs.
         Use PySub.Geometries.fetch() to import plottable geometries as a list.
-    service : str, optional
-        The type of map plotted behind the reservoir data. 
-        The default is 'opentopo'. Available services:
-            - opentopo
-            - luchtfoto
-            - brtachtergrondkaart
+    zoom_level : int, optional
+        An integer indicating the zoom level for the maps. Low numbers
+        show maps on a large scale, higher numbers show maps on a smaller
+        scale.
     contour_levels : list, float/int, optional
         The data vlaues to show the contours of. The default is None.
         When None, the contour levels will be based on the data and the 
@@ -2765,7 +2805,7 @@ def plot_points_on_map(Model, points = None, labels = None, reservoir = None, ti
                                   unit = unit,
                                   title = title, 
                                   additional_shapes = additional_shapes, 
-                                  service = service, layer = layer, figsize=figsize, epsg = epsg,
+                                  zoom_level = zoom_level, figsize=figsize, epsg = epsg,
                                   contour_levels = contour_levels, 
                                   contour_steps = contour_steps, 
                                   plot_reservoir_shapes = plot_reservoir_shapes,
@@ -2781,7 +2821,7 @@ def plot_points_on_map(Model, points = None, labels = None, reservoir = None, ti
                                   plot_reservoir_shapes = plot_reservoir_shapes,
                                   buffer = buffer, annotate = annotate_reservoirs, 
                                   additional_shapes = additional_shapes,
-                                  service = service, layer = layer, figsize=figsize, epsg = epsg,
+                                  zoom_level = zoom_level, figsize=figsize, epsg = epsg,
                                   final = False,
                                   # kwargs
                                   shape_kwargs = shape_kwargs,
@@ -3280,7 +3320,7 @@ def plot_timeseries(Model, points = None,
             for j, p in enumerate(points):
                 timeserie = np.array(Model.get_timeseries(variable = variable, x = float(x[j]), y = float(y[j]), reservoir = reservoir_index))
                 timeserie = _utils.convert_SI(timeserie, 'm', unit)
-                timesteps = Model.timesteps.values
+                timesteps = Model.timesteps
                 label = str(x[j]) + ', ' + str(y[j])
                 ax.plot(timesteps, timeserie, c = c[j], label = label, **adjusted_plot_kwargs)
         if _utils.isSubsidenceSuite(Model):
@@ -3295,7 +3335,7 @@ def plot_timeseries(Model, points = None,
                         reservoir_index = reservoir_entry_to_index(m, reservoir)
                         timeserie = np.array(m.get_timeseries(variable = variable, reservoir = reservoir_index, x = x[j], y = y[j]))
                         timeserie = _utils.convert_SI(timeserie, 'm', unit)
-                        timesteps = m.timesteps.values
+                        timesteps = m.timesteps
                         label = str(x[j]) + ', ' + str(y[j]) + ' - ' + m.name
                         ax.plot(timesteps, timeserie, c = c[j], label = label, **adjusted_kwargs)
                         counter += 1
@@ -3309,7 +3349,7 @@ def plot_timeseries(Model, points = None,
             
             timeserie = np.array(data)
             timeserie = _utils.convert_SI(timeserie, 'm', unit)
-            timesteps = Model.timesteps.values
+            timesteps = Model.timesteps
             label = str(x) + ', ' + str(y)
             ax.plot(timesteps, timeserie, c = c[0], label = label, **adjusted_plot_kwargs)
         if _utils.isSubsidenceSuite(Model):
@@ -3328,7 +3368,7 @@ def plot_timeseries(Model, points = None,
                     
                     timeserie = np.array(data)
                     timeserie = _utils.convert_SI(timeserie, 'm', unit)
-                    timesteps = m.timesteps.values
+                    timesteps = m.timesteps
                     label = str(x) + ', ' + str(y) + ' - ' + m.name
                     ax.plot(timesteps, timeserie, c = c[i], label = label, **adjusted_kwargs)
                     counter += 1
@@ -3483,7 +3523,7 @@ def plot_overlap(Model, time = -1, cutoff = 0.01,
                  plot_reservoir_shapes = True, 
                  plot_subsidence_contours = False,
                  additional_shapes = [],
-                 service = 'opentopo', layer = 'opentopoachtergrondkaart', figsize=(8, 8), epsg = 28992,
+                 zoom_level = 10, figsize=(8, 8), epsg = 28992,
                  contour_levels = None, 
                  contour_steps = 0.01, 
                  unit = 'cm', 
@@ -3531,14 +3571,10 @@ def plot_overlap(Model, time = -1, cutoff = 0.01,
     additional_shapes : list of PySub.Gemetries objects
         A list if Geometries to plot inside the figures that are not the reservoirs.
         Use PySub.Geometries.fetch() to import plottable geometries as a list.
-    service : str, optional
-        The type of map plotted behind the reservoir data. 
-        The default is 'opentopo'. Available services:
-            - opentopo
-            - luchtfoto
-            - brtachtergrondkaart (# TODO: plot alleen wit...)
-    layer : str, optional
-        The layer of the WMTS to be used. default is "opentopoachtergrondkaart".
+    zoom_level : int, optional
+        An integer indicating the zoom level for the maps. Low numbers
+        show maps on a large scale, higher numbers show maps on a smaller
+        scale.
     figsize : tuple, float, optional
         The size of the figure in inches.
     epsg : int, optional
@@ -3631,7 +3667,7 @@ def plot_overlap(Model, time = -1, cutoff = 0.01,
                             buffer = 0, annotate = False, 
                             plot_reservoir_shapes = plot_reservoir_shapes,
                             additional_shapes = additional_shapes,
-                            service = service, layer = layer, figsize = figsize, epsg = epsg,
+                            zoom_level = zoom_level, figsize = figsize, epsg = epsg,
                             final = False,
                             shape_kwargs = shape_kwargs,
                             annotation_kwargs = annotation_kwargs,
@@ -3644,7 +3680,7 @@ def plot_overlap(Model, time = -1, cutoff = 0.01,
                                           unit = unit,
                                           plot_reservoir_shapes = plot_reservoir_shapes, 
                                           additional_shapes = additional_shapes, 
-                                          service = service, layer = layer, figsize=figsize, epsg = epsg,
+                                          zoom_level = zoom_level, figsize=figsize, epsg = epsg,
                                           contour_levels = contour_levels, 
                                           contour_steps = contour_steps, 
                                           title = title,
@@ -3751,15 +3787,13 @@ def _cumulative_m(ax, Model, variable, unit, reservoir_index, line_dict, steps, 
     
     for area, color in zip(areas, c): area.set_facecolor(color)
 
-def plot_overlap_cross_section(Model, lines = None, mode = 'cumulative', variable = 'subsidence', reservoir = None, time = -1, model = None,
-                       plot_reservoir_shapes = True,
-                       additional_shapes = [],
+def plot_overlap_cross_section(Model, lines = None, mode = 'cumulative', 
+                               variable = 'subsidence', reservoir = None, time = -1, model = None,
                        unit = 'cm',
                        num = 1000, 
-                       plot_figsize = (12, 8),
-                       service = 'opentopo', layer = 'opentopoachtergrondkaart', map_figsize=(8, 8), epsg = 28992,
-                       cross_section_title = None,
-                       map_title = None,
+                       zoom_level = 10, figsize = (12, 8),
+                       epsg = 28992,
+                       title = None,
                        contour_levels = None, 
                        contour_steps = 0.01, 
                        y_axis_exageration_factor = 2,
@@ -3770,12 +3804,6 @@ def plot_overlap_cross_section(Model, lines = None, mode = 'cumulative', variabl
                        legend = True,
                        horizontal_line = None, 
                        plot_kwargs = {},
-                       raster_kwargs = {},
-                       shape_kwargs = {},
-                       contourf_kwargs = {},
-                       contour_kwargs = {},
-                       clabel_kwargs = {},
-                       colorbar_kwargs = {},
                        annotation_kwargs = {},
                        fill_between_kwargs = {}):
     
@@ -3812,6 +3840,252 @@ def plot_overlap_cross_section(Model, lines = None, mode = 'cumulative', variabl
     model : int, str or list of str or int
         Label - or list of labels - of the models that you want to plot the cross 
         section of. The default is None, then all model will be plotted.
+    unit : str, optional
+        The SI-unit the data will be plotted in. The default is 'cm'.
+        Also available are 'mm', 'm' and 'km'.
+    num : int, optional
+        The amount of points sampled along the crossection.
+        The default is 1000.
+    figsize : tuple, float, optional
+        The size of the figure with the cross section plots in inches.
+    zoom_level : int, optional
+        An integer indicating the zoom level for the maps. Low numbers
+        show maps on a large scale, higher numbers show maps on a smaller
+        scale.
+    epsg : int, optional
+        The available epsg of the WMTS service
+    title : str, optional
+        The title of the figure displaying the cross section data. 
+        The default is None.
+    y_axis_exageration_factor : int/float, optional
+        The factor the length of the y_axis will be exagerated. If the lowest data 
+        point in the graph is -1, the y-axis will be from -y_axis_exageration_factor
+        to the highest point. The default is 2.
+    ylim : tuple, float, optional
+        A tuple of values determinging the extend of the y-axis.The default is None.
+        When None, the y-axis will be determined using the data and 
+        y_axis_exageration_factor.
+    final : bool
+        When True, the figure will be shown en return immutable. If False,
+        the matplotlib figure and ax(es) objects wqill be returned.
+    fname : str
+        The location the figure will be saved it. The default is '' this, will 
+        indicate the figure will not be stored. When a path is given, this figure 
+        will be stored at that location, when just a name is given, the figure 
+        will be stored in the project folder.
+    svg : bool
+        Save this file also as an svg-file.
+    legend : bool
+        When True, shows a legend, when False, the figure will plot no legend.
+        The default is True.
+    horizontal_line : float/dict
+        When a float, it must be the value on the y-axis at which the horizontal 
+        line will be placed. When a dict, the key of the dictionary will be the label 
+        of the line and the entry will be the value on the y-axis the horizontal 
+        line will be plotted along.
+    plot_kwargs : dict, optional
+        Dictionary with the keyword arguments for the plotted lines. 
+        The default is {}. See SubsidenceModel attribute plot_defaults
+    annotation_kwargs : dict, optional
+        Dictionary with the keyword arguments for the plotted annotations. 
+        The default is {}. See SubsidenceModel attribute annotation_defaults
+        for additional information.
+    fill_between_kwargs : dict, optional
+        Dictionary with the keyword arguments for the filled area between lines. 
+        The default is {}. See SubsidenceModel attribute fill_area_defaults
+        for additional information.
+
+    Returns
+    -------
+    None 
+    OR
+    cross section fig, ax and map fig and ax
+
+    """
+    
+    cumulative = mode == 'cumulative'
+    not_cumulative = mode == 'individual'
+    if not cumulative and not not_cumulative:
+        warn(f'Warning: mode: {mode} is not recognised. The available options are "cumulative" and "individual". Set to "cumulative".')
+        cumulative = True
+    
+    if lines is None:
+        line_dict = ask_for_line(Model, zoom_level = zoom_level, figsize = figsize, epsg = epsg)
+    elif not isinstance(lines, dict):
+        line_dict = {}
+        for i, line in enumerate(lines):
+            line_dict[string.ascii_uppercase[i % 26]] = line
+    else:
+        line_dict = lines
+    
+    unit_label = get_unit_label(variable, unit)
+    
+    if _utils.isSubsidenceModel(Model):
+        
+        steps = time_entry_to_index(Model, time)
+       
+        reservoir_index = reservoir_entry_to_index(Model, reservoir)
+        
+        # plot cross sections
+        l_fig, l_ax = plt.subplots(figsize = figsize)
+        
+        if not_cumulative:
+            c, adjusted_plot_kwargs = seperate_colors_from_dict(plot_kwargs, len(reservoir_index))
+            _individual_m(l_ax, Model, variable, unit, reservoir_index, line_dict, steps, num,
+                          c, plot_kwargs = adjusted_plot_kwargs, annotation_kwargs = annotation_kwargs)
+        if cumulative:
+            c, adjusted_fill_between_kwargs = seperate_colors_from_dict(fill_between_kwargs, len(reservoir_index))
+            _cumulative_m(l_ax, Model, variable, unit, reservoir_index, line_dict, steps, num,
+                          c, fill_between_kwargs = adjusted_fill_between_kwargs)
+            
+        l_ax.grid()
+        if title is None:
+            title = f'{variable.capitalize()} {unit_label} per reservoir and total {variable}.'
+        add_title(l_ax, title)                
+        if horizontal_line is not None:
+            add_horizontal_line(l_ax, horizontal_line, unit = unit, label = '__nolegend__')
+        if legend: l_ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))     
+        
+        l_ax.set_ylabel(f'{variable.capitalize()} ({unit_label})')
+        l_ax.set_xlabel('Distance (m)')
+        set_ylim(l_ax, ylim = ylim, y_axis_exageration_factor = y_axis_exageration_factor, unit_in = 'm', unit_out = unit)
+        
+        if final:
+            if fname:
+                savefig(Model, fname, svg = svg)
+            plt.show()
+        else:
+            return l_fig, l_ax
+        
+    elif _utils.isSubsidenceSuite(Model):
+        model = Model.model_label_to_index(model)
+        
+        # Cross section
+        reservoir_dict = Model.reservoir_dict()
+        reservoir_index = reservoir_entry_to_index(Model, reservoir)
+
+        for r, i in reservoir_dict.items(): 
+            if i not in reservoir_index: 
+                reservoir_dict[r].drop()
+        c, adjusted_plot_kwargs = seperate_colors_from_dict(plot_kwargs, len(reservoir_dict))
+        color_dict = {ur: cr for ur, cr in zip(reservoir_dict.keys(), c)}
+       
+        fig = plt.figure()
+        number_of_axes = len(model)
+        
+        number_of_rows = number_of_axes//2 + 1
+        number_of_columns = min(number_of_axes, 2)
+        
+        counter = 0
+        map_title = []
+        for i, m in enumerate(Model._models):
+            if i in model:               
+                steps = time_entry_to_index(m, time)
+                data_coords = list(m.grid[variable].coords)
+                if 'time' not in data_coords:
+                    steps = [steps[-1]]
+                _legend_labels = time_to_legend(steps, m)
+                _legend_labels = [label + ' ' + m.name for label in _legend_labels]
+                
+                map_title.append(f'Cross section - {m.name} - {_legend_labels[-1]}')
+                
+                ax = fig.add_subplot(number_of_rows, number_of_columns, counter+1)
+                if not cumulative:
+                    _individual_m(ax, m, variable, unit, reservoir_index, line_dict, steps, num,
+                                  c, plot_kwargs = adjusted_plot_kwargs, annotation_kwargs = annotation_kwargs)
+                elif cumulative:
+                    _cumulative_m(ax, m, variable, unit, reservoir_index, line_dict, steps, num,
+                                  c, fill_between_kwargs = fill_between_kwargs)
+                
+                unit_label = get_unit_label(variable, unit)
+                
+                if title is None:
+                    title = f'Cross section {variable} ({unit_label})'
+                
+                add_title(ax, title)
+                ax.set_xlabel('Distance (m)')
+                ax.set_ylabel(f"{variable.capitalize().replace('_', ' ')} ({unit_label})")
+                set_ylim(ax, ylim = ylim, y_axis_exageration_factor = y_axis_exageration_factor, unit_in = 'm', unit_out = unit)
+                add_horizontal_line(ax, horizontal_line, unit = unit)
+                
+                ax.grid()
+                
+                counter += 1
+        
+        legend_handles = [Line2D([0], [0], color = color_dict[r]) for r in color_dict.keys()]
+        legend_handles += [Line2D([0], [0], color = 'k')]
+        legend_labels = list(color_dict.keys()) + ['Total']
+        if legend: fig.legend(legend_handles, legend_labels, loc='center left', bbox_to_anchor=(1, 0.5))        
+        
+        fig.set_size_inches(figsize)
+        fig.tight_layout()
+        
+        if fname:
+            fname_cross_section = f'{fname}_cross_section_{variable}'
+            savefig(Model, fname_cross_section, svg = svg)
+        
+        if final:
+            plt.show()
+            plt.close()
+        else:
+            return fig, ax
+
+    
+def plot_map_with_line(Model, lines = None, variable = 'subsidence', 
+                       reservoir = None, time = -1, model = None,
+                       plot_reservoir_shapes = True,
+                       additional_shapes = [],
+                       unit = 'cm',
+                       buffer = 0,
+                       num = 1000, 
+                       plot_figsize = (12, 8),
+                       zoom_level = 10, map_figsize=(8, 8), epsg = 28992,
+                       cross_section_title = None,
+                       title = None,
+                       contour_levels = None, 
+                       contour_steps = 0.01, 
+                       y_axis_exageration_factor = 2,
+                       ylim = None,
+                       final = True,
+                       fname = 'overlap',
+                       svg = False,
+                       legend = True,
+                       horizontal_line = None, 
+                       plot_kwargs = {},
+                       raster_kwargs = {},
+                       shape_kwargs = {},
+                       contourf_kwargs = {},
+                       contour_kwargs = {},
+                       clabel_kwargs = {},
+                       colorbar_kwargs = {},
+                       annotation_kwargs = {},
+                       fill_between_kwargs = {}):
+    
+    """Plot a map of the cross section in a 2D representation, and
+    plot a line or set of lines of the subsidence along that cross section.
+    
+    Parameters
+    ----------
+    Model : SubsidenceModel or ModelSuite objects
+    lines : List, float/int
+        List of tuples with points representing the x- and y-coordinates 
+        in the dataset coordinate system. These points represent the line
+        the cross section will be drawn along.
+    variable : str: optional
+        Any Model variable that is present in the model and can be represented as 
+        a grid. Default is 'subsidence'. Other values can be "slope", "compaction", 
+        "pressure", etc.
+    reservoir : int, str or list of int or str, optional
+        The index or name of the reservoirs you want to plot. If it is a 
+        list, multiple reservoirs will be displayed. The default is None.
+        When None, all reservoirs will be displayed.
+    time : int, str, optional
+        The index or name of the timestep you want to plot. If it is a 
+        list, an Exception will occur. The default is -1, the final 
+        timestep.
+    model : int, str or list of str or int
+        Label - or list of labels - of the models that you want to plot the cross 
+        section of. The default is None, then all model will be plotted.
     plot_reservoir_shapes : bool, optional
         The cross section draws a line on a map, to show where the cross section 
         is taken over. If this value is True, this map will show the reservoirs 
@@ -3819,19 +4093,18 @@ def plot_overlap_cross_section(Model, lines = None, mode = 'cumulative', variabl
     unit : str, optional
         The SI-unit the data will be plotted in. The default is 'cm'.
         Also available are 'mm', 'm' and 'km'.
+    buffer : float/int, optional.
+        Additional space to be added to the edge of the plotted 
+        figure in m. The default is 0.
     num : int, optional
         The amount of points sampled along the crossection.
         The default is 1000.
     plot_figsize : tuple, float, optional
         The size of the figure with the cross section plots in inches.
-    service : str, optional
-        The type of map plotted behind the reservoir data. 
-        The default is 'opentopo'. Available services:
-            - opentopo
-            - luchtfoto
-            - brtachtergrondkaart (# TODO: plot alleen wit...)
-    layer : str, optional
-        The layer of the WMTS to be used. default is "opentopoachtergrondkaart".
+    zoom_level : int, optional
+        An integer indicating the zoom level for the maps. Low numbers
+        show maps on a large scale, higher numbers show maps on a smaller
+        scale.
     map_figsize : tuple, float, optional
         The size of the figure with maps in inches.
     epsg : int, optional
@@ -3908,16 +4181,9 @@ def plot_overlap_cross_section(Model, lines = None, mode = 'cumulative', variabl
     OR
     cross section fig, ax and map fig and ax
 
-    """
-    
-    cumulative = mode == 'cumulative'
-    not_cumulative = mode == 'individual'
-    if not cumulative and not not_cumulative:
-        warn(f'Warning: mode: {mode} is not recognised. The available options are "cumulative" and "individual". Set to "cumulative".')
-        cumulative = True
-    
+    """  
     if lines is None:
-        line_dict = ask_for_line(Model, service = service, layer = layer, figsize = map_figsize, epsg = epsg)
+        line_dict = ask_for_line(Model, zoom_level = zoom_level, figsize = map_figsize, epsg = epsg)
     elif not isinstance(lines, dict):
         line_dict = {}
         for i, line in enumerate(lines):
@@ -3928,51 +4194,18 @@ def plot_overlap_cross_section(Model, lines = None, mode = 'cumulative', variabl
     unit_label = get_unit_label(variable, unit)
     
     if _utils.isSubsidenceModel(Model):
-        
         steps = time_entry_to_index(Model, time)
-       
-        reservoir_index = reservoir_entry_to_index(Model, reservoir)
         
-        # plot cross sections
-        fig, ax = plt.subplots(figsize = plot_figsize)
-        
-        if not_cumulative:
-            c, adjusted_plot_kwargs = seperate_colors_from_dict(plot_kwargs, len(reservoir_index))
-            _individual_m(ax, Model, variable, unit, reservoir_index, line_dict, steps, num,
-                          c, plot_kwargs = adjusted_plot_kwargs, annotation_kwargs = annotation_kwargs)
-        if cumulative:
-            c, adjusted_fill_between_kwargs = seperate_colors_from_dict(fill_between_kwargs, len(reservoir_index))
-            _cumulative_m(ax, Model, variable, unit, reservoir_index, line_dict, steps, num,
-                          c, fill_between_kwargs = adjusted_fill_between_kwargs)
-            
-        ax.grid()
-        if cross_section_title is None:
-            cross_section_title = f'{variable.capitalize()} {unit_label} per reservoir and total {variable}.'
-        add_title(ax, cross_section_title)                
-        if horizontal_line is not None:
-            add_horizontal_line(ax, horizontal_line, unit = unit, label = '__nolegend__')
-        if legend: ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))     
-        
-        ax.set_ylabel(f'{variable.capitalize()} {unit_label}')
-        ax.set_xlabel('Distance (m)')
-        set_ylim(ax, ylim = ylim, y_axis_exageration_factor = y_axis_exageration_factor, unit_in = 'm', unit_out = unit)
-        
-        if final:
-            if fname:
-                savefig(Model, fname, svg = svg)
-            plt.show()
-        
-        # Plot maps
-        if map_title is None:           
-            map_title = f'Cross section {variable} ({unit_label}) - {time_to_legend(Model.timesteps[steps][0], Model)[0]}'
+        if title is None:           
+            title = f'Cross section {variable} ({unit_label}) - {time_to_legend(Model.timesteps[steps][-1], Model)[0]}'
             
         
-        m_fig, m_ax = plot_subsidence(Model, reservoir = reservoir, time = steps, buffer = 0, 
+        m_fig, m_ax = plot_subsidence(Model, reservoir = reservoir, time = time, buffer = buffer, 
                                       variable = variable,
                                       unit = unit,
                                       additional_shapes = additional_shapes, 
-                                      title = map_title, 
-                                      service = service, layer = layer, figsize=map_figsize, epsg = epsg,
+                                      title = title, 
+                                      zoom_level = zoom_level, figsize=map_figsize, epsg = epsg,
                                       contour_levels = contour_levels, 
                                       contour_steps = contour_steps, 
                                       plot_reservoir_shapes = plot_reservoir_shapes,
@@ -3990,94 +4223,22 @@ def plot_overlap_cross_section(Model, lines = None, mode = 'cumulative', variabl
             if fname:
                 fname_map = f'{fname}_map_{variable}'
                 savefig(Model, fname_map, svg = svg)
-        
             plt.show()
 
         else:
-            return fig, ax, m_fig, m_ax
+            return m_fig, m_ax
         
-    elif _utils.isSubsidenceSuite(Model):
-        model = Model.model_label_to_index(model)
-        
-        # Cross section
-        reservoir_dict = Model.reservoir_dict()
-        reservoir_index = reservoir_entry_to_index(Model, reservoir)
-
-        for r, i in reservoir_dict.items(): 
-            if i not in reservoir_index: 
-                reservoir_dict[r].drop()
-        c, adjusted_plot_kwargs = seperate_colors_from_dict(plot_kwargs, len(reservoir_dict))
-        color_dict = {ur: cr for ur, cr in zip(reservoir_dict.keys(), c)}
-       
-        fig = plt.figure()
-        number_of_axes = len(model)
-        
-        number_of_rows = number_of_axes//2 + 1
-        number_of_columns = min(number_of_axes, 2)
-        
-        counter = 0
-        map_title = []
-        for i, m in enumerate(Model._models):
-            if i in model:               
-                steps = time_entry_to_index(m, time)
-                data_coords = list(m.grid[variable].coords)
-                if 'time' not in data_coords:
-                    steps = [steps[-1]]
-                _legend_labels = time_to_legend(steps, m)
-                _legend_labels = [label + ' ' + m.name for label in _legend_labels]
-                
-                map_title.append(f'Cross section - {m.name} - {_legend_labels[-1]}')
-                
-                ax = fig.add_subplot(number_of_rows, number_of_columns, counter+1)
-                if not cumulative:
-                    _individual_m(ax, m, variable, unit, reservoir_index, line_dict, steps, num,
-                                  c, plot_kwargs = adjusted_plot_kwargs, annotation_kwargs = annotation_kwargs)
-                elif cumulative:
-                    _cumulative_m(ax, m, variable, unit, reservoir_index, line_dict, steps, num,
-                                  c, fill_between_kwargs = fill_between_kwargs)
-                
-                unit_label = get_unit_label(variable, unit)
-                
-                if cross_section_title is None:
-                    cross_section_title = f'Cross section {variable} ({unit_label})'
-                
-                add_title(ax, cross_section_title)
-                ax.set_xlabel('Distance (m)')
-                ax.set_ylabel(f"{variable.capitalize().replace('_', ' ')} ({unit_label})")
-                set_ylim(ax, ylim = ylim, y_axis_exageration_factor = y_axis_exageration_factor, unit_in = 'm', unit_out = unit)
-                add_horizontal_line(ax, horizontal_line, unit = unit)
-                
-                ax.grid()
-                
-                counter += 1
-        
-        legend_handles = [Line2D([0], [0], color = color_dict[r]) for r in color_dict.keys()]
-        legend_handles += [Line2D([0], [0], color = 'k')]
-        legend_labels = list(color_dict.keys()) + ['Total']
-        if legend: fig.legend(legend_handles, legend_labels, loc='center left', bbox_to_anchor=(1, 0.5))        
-        
-        fig.set_size_inches(plot_figsize)
-        fig.tight_layout()
-        
-        if fname:
-            fname_cross_section = f'{fname}_cross_section_{variable}'
-            savefig(Model, fname_cross_section, svg = svg)
-        
-        
-        plt.show()
-        plt.close()
-        
-        # map of cross sections
-        time2D = steps[-1]
-        
-        fig, ax = plot_subsidence(Model, reservoir = reservoir, time = time2D, model = model, 
+    if _utils.isSubsidenceSuite(Model): 
+        if title is None:           
+            title = f'Cross section {variable} ({unit_label}) - {time_to_legend(Model.timesteps[steps][-1], Model)[0]}'
+        m_fig, m_ax = plot_subsidence(Model, reservoir = reservoir, time = time, model = model, 
                                   variable = variable, 
                                   plot_reservoir_shapes = plot_reservoir_shapes,
                                   additional_shapes = additional_shapes, 
-                                  buffer = 0, 
+                                  buffer = buffer, 
                                   unit = unit,
-                                  title = map_title, 
-                                  service = service, layer = layer, figsize=map_figsize, epsg = epsg,
+                                  title = title, 
+                                  zoom_level = zoom_level, figsize=map_figsize, epsg = epsg,
                                   contour_levels = contour_levels, 
                                   contour_steps = contour_steps, 
                                   shape_kwargs = shape_kwargs,
@@ -4088,20 +4249,17 @@ def plot_overlap_cross_section(Model, lines = None, mode = 'cumulative', variabl
                                   clabel_kwargs = clabel_kwargs,
                                   colorbar_kwargs = colorbar_kwargs)
         
-        for _ax in ax:
+        for _ax in m_ax:
             add_lines(ax = _ax, line = line_dict, annotation_kwargs = annotation_kwargs)
-        
-        if fname:
-            fname_map = f'{fname}_map_{variable}'
-            savefig(Model, fname_map, svg = svg)
-        
-    if final:
-        plt.show()
-       
-        
-    else:
-        return fig, ax
-            
+               
+        if final:
+            plt.show()
+            if fname:
+                fname_map = f'{fname}_map_{variable}'
+                savefig(Model, fname_map, svg = svg)
+        else:
+            return m_fig, m_ax
+                
             
             
             

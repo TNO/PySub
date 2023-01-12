@@ -192,7 +192,6 @@ class RateTypeCompaction:
             input_core_dims = [['time'],['time'], [], [], [], [], []],
             output_core_dims = [['time']],
             vectorize = True,
-            dask = 'parallelized'
             )
         
         mae = [1]
@@ -210,7 +209,6 @@ class RateTypeCompaction:
                 input_core_dims = [['time'],['time'], [], [], [], [], []],
                 output_core_dims = [['time']],
                 vectorize = True,
-                dask = 'parallelized'
                 )
             mae.append(np.mean(np.abs(strain_next - strain_prev))) 
             diff_mae = mae[-2] - mae[-1]
@@ -282,33 +280,8 @@ class RateTypeCompaction:
             input_core_dims = [['time'], ['y', 'x', 'time'], ['y', 'x'], ['y', 'x'], ['y', 'x'], ['y', 'x'], []],
             output_core_dims = [['y', 'x', 'time']],
             vectorize = True,
-            # dask = 'parallelized',
             )
         
-        
-        # mae = [1]
-        # diff_mae = 10
-        # multiplier = 2
-        # while diff_mae > self.epsilon:
-        #     number_of_inner_iterations = start_inner_itterations * multiplier
-        #     strain_next = xr.apply_ufunc(
-        #         RTiCM2D,
-        #         timesteps,
-        #         sigma, 
-        #         compaction_coefficients, 
-        #         cmref, 
-        #         b, 
-        #         refference_stress_rates,  
-        #         number_of_inner_iterations, 
-        #         input_core_dims = [['time'], ['y', 'x', 'time'], ['y', 'x'], ['y', 'x'], ['y', 'x'], ['y', 'x'], []],
-        #         output_core_dims = [['y', 'x', 'time']],
-        #         vectorize = True,
-        #         dask = 'parallelized',
-        #         )
-        #     mae.append((abs(strain_next - strain_prev)).mean()) 
-        #     diff_mae = abs(mae[-2] - mae[-1])
-        #     multiplier *=2
-        #     strain_prev = strain_next.copy()
         compaction = strain_next * grid.thickness * grid.dx * grid.dy
         return compaction.transpose('y', 'x', 'reservoir', 'time')
 
@@ -386,7 +359,7 @@ def RTiCM_reservoirs(timesteps, sigma, cmd, cmref, b, reference_stress_rates, nu
         strain[i] = RTiCM(timesteps, sigma[i], cmd[i], cmref[i], b[i], reference_stress_rates[i], number_of_inner_itterations)
     return strain
 
-@njit(parallel = True)
+# @njit(parallel = True) # Causes errors
 def RTiCM2D_reservoirs(timesteps, sigma, cmd, cmref, b, reference_stress_rates, number_of_inner_itterations):
     strain = np.zeros(sigma.shape)
     for i in range(sigma.shape[2]):
@@ -394,7 +367,7 @@ def RTiCM2D_reservoirs(timesteps, sigma, cmd, cmref, b, reference_stress_rates, 
                             reference_stress_rates[..., i], number_of_inner_itterations)
     return strain
      
-@njit(parallel = True, fastmath = True)
+# @njit(parallel = True, fastmath = True) # Causes errors, but still much faster than apply_ufunc
 def RTiCM2D(timesteps, sigma, cmd, cmref, b, reference_stress_rates, number_of_inner_itterations):
     """Isotach formulation of the ratetype compaction model (Pruiksma 2015)
     https://www.sciencedirect.com/science/article/pii/S1365160915001525?via%3Dihub#bib18
