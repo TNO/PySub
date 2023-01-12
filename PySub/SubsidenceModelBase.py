@@ -258,8 +258,14 @@ class SubsidenceModel:
             except: raise AttributeError(f"""'{self.__class__.__name__}' has no attribute '{item}'""" )
     
     def _fetch(self, item):
-        if hasattr(self.grid, item):
-            return getattr(self.grid, item)
+        if item == 'reservoirs':
+            grid_item = 'reservoir'
+        elif item == 'timesteps':
+            grid_item = 'time'
+        else:
+            grid_item = item
+        if hasattr(self.grid, grid_item):
+            return getattr(self.grid, grid_item)
         else:
             return getattr(self, f'_{item}')
     
@@ -468,7 +474,7 @@ class SubsidenceModel:
             The returned list has the same length as the number of reservoirs in 
             the model.
         """
-        return self._reservoirs
+        return self._fetch('reservoirs').values
     
     @property
     def shapes(self):
@@ -821,7 +827,7 @@ class SubsidenceModel:
             The returned list has the same length as the number of steps in 
             the model.
         """
-        return self._timesteps
+        return self._fetch('timesteps').values
     
     @property
     def knothe_angles(self):
@@ -1024,15 +1030,8 @@ class SubsidenceModel:
                     max_distance = np.round(((hx - lx) // 2) * self._dx)
                 else:
                     max_distance = np.round(((hy - ly) // 2) * self._dy)
-                input_is_valid = False
-                while not input_is_valid:
-                    check = input(f'The influence radius {self._influence_radius} needs to be higher than half of the largest reservoir: {max_distance}. Do you want to continue? y/n: ')
-                    if check.lower() == 'y':
-                        input_is_valid = True
-                        return
-                    elif check.lower() == 'n':
-                        raise Exception(f'The influence radius {self._influence_radius} needs to be higher than half of the largest reservoir: {max_distance}.')
-    
+                warn(f'The influence radius {self._influence_radius} less than half of the largest reservoir: {max_distance}.')
+                    
     # add
     def add_kernels(self):
         """Creates an SubsidenceKernel.InfluenceKernel object for each 
@@ -1614,7 +1613,7 @@ class SubsidenceModel:
             raise Exception('To set variable from a raster file, built the grid first.')
         reshaped_data = np.transpose(loaded_data, axes = (1, 2, 0))
         data_xr = xr.DataArray(reshaped_data, (('y', y), ('x', x), ('band', np.arange(number_of_bands))))
-        interpolated_data = data_xr.interp_like(self.grid, method = 'linear', kwargs = {'fill_value': 0})
+        interpolated_data = data_xr.interp_like(self.grid, method = 'nearest', kwargs = {'fill_value': 0})
         return interpolated_data.values
     
     def load_from_csv(self, fname, delimiter = ';', header = 0, decimal = ','):
@@ -1625,7 +1624,7 @@ class SubsidenceModel:
         if not (self.hasattr('number_of_steps') and self.hasattr('number_of_reservoirs') and self.built):
             raise Exception('To set variable from a raster file, built the grid first.')
         data_xr = xr.DataArray(loaded_data, (('y', y[:, 0]), ('x', x[0, :]), ('band', np.arange(number_of_bands))))
-        interpolated_data = data_xr.interp_like(self.grid, method = 'linear', kwargs = {'fill_value': 0})
+        interpolated_data = data_xr.interp_like(self.grid, method = 'nearest', kwargs = {'fill_value': 0})
         return interpolated_data.values
     
     def set_1D_or_2D(self, name, var, layer = None):
@@ -2751,17 +2750,22 @@ class SubsidenceModel:
     
     def compare_observations(self):
         if not self.hasattr('observation_subsidence'):
-            self.calculate_subsidence_at_observations()
+            self.calculate_subsidence_at_observations(interpolate = True)
             
         if self.hasattr('observation_points'):
             differences = []
+            unique_times = np.unique(_utils.flatten_ragged_lists2D(self.observation_points.time))
+            interpolated_over_time = self.grid['observation_subsidence'].interp(time = unique_times)
             for p in self.observation_points:
-                model_value = self.grid['observation_subsidence'].loc[p.name].interp(
-                    time = p.time).sum(dim = 'reservoir')
+                model_value = interpolated_over_time.sel(
+                    time = p.time, 
+                    observations = p.name
+                    ).sum('reservoir').values
                 observation_value = -p.relative
                 difference = model_value - observation_value
-                differences.append(list(difference.values))
-            return differences
+                differences.append(list(difference))
+            differences = _utils.flatten_ragged_lists2D(differences)
+            return np.array(differences)
         else:
             warn('Warning: No observation points have been set.')
     
@@ -2793,7 +2797,7 @@ class SubsidenceModel:
 
         """
         differences = self.compare_observations()
-        differences = _utils.flatten_ragged_lists2D(differences)
+       
         if method.lower() == 'mse':
             return self.mse(differences)
         elif method.lower() == 'mae':

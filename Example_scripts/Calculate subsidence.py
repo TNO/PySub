@@ -4,7 +4,9 @@ from PySub import plot_utils as plot
 from PySub.memory import build_model
 from PySub.SubsidenceSuite import ModelSuite
 
+
 if __name__ == '__main__':
+    # plot.adjust_background(google_service = 'satellite')
     models = []
     
     #%% Make the linear model
@@ -18,11 +20,7 @@ if __name__ == '__main__':
     Model.calculate_subsidence()
     
     # plot with a different background map
-    plot.plot_subsidence(Model,
-                         service = 'https://map1c.vis.earthdata.nasa.gov/wmts-geo/wmts.cgi',
-                         layer = 'VIIRS_CityLights_2012',
-                         epsg = 28992,
-                         )
+    plot.plot_subsidence(Model)
     models.append(Model)
     
     #%% Make the time-decay model

@@ -6,8 +6,6 @@ from matplotlib import path
 
 from shapely.ops import cascaded_union 
 
-
-
 def get_mask_from_shp(xy_list, ax, ay):
     """
     Fill in a grid with boolean values based on occurence of a shapely gemotry object.

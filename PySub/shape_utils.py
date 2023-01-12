@@ -153,6 +153,19 @@ def get_shapely(fname):
         geometries.append(geom)
     return geometries, crs
 
+def _get_polygon(fname, encoding):
+    with shp.Reader(fname) as shapes:
+        crs = _get_projection(fname)
+        geometries = []
+        for s in shapes:
+            geo_json = s.shape.__geo_interface__
+            shape = geometry.shape(geo_json)
+            if geo_json['type'] == 'MultiPolygon':
+                geometries = geometries + list(shape)
+            else:
+                geometries.append(shape)
+    return geometries, crs
+
 def get_polygon(fname):
     """Get the xy coordinates of the polygons in a shapefile.
 
@@ -171,17 +184,9 @@ def get_polygon(fname):
 
     """
 
-    shapes = shp.Reader(fname)
-    crs = _get_projection(fname)
-    geometries = []
-    for s in shapes:
-        geo_json = s.shape.__geo_interface__
-        shape = geometry.shape(geo_json)
-        if geo_json['type'] == 'MultiPolygon':
-            geometries = geometries + list(shape)
-        else:
-            geometries.append(shape)
-        
+    geometries, crs = _get_polygon(fname, 'utf-8') # 
+    if len(geometries) == 0:
+        raise Exception(f'Shapefile doe not use utf-8 encoding: \n {fname}')
     return geometries, crs
 
 def save_raster(data, x, y, dx, dy, epsg, fname, fileformat = "GTiff"):

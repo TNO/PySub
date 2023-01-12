@@ -8,6 +8,7 @@ import pandas as pd
 from matplotlib import path
 import datetime
 import xarray as xr
+from warnings import warn
 
 def fill_dict_with_none(dict):
     """If the values of a dictionary are a list, fill that list
@@ -827,12 +828,17 @@ def convert_SI(val, unit_in, unit_out):
     """
     SI = {'mm':0.001, 'cm':0.01, 'm':1.0, 'km':1000.}
     units = list(SI.keys())
+    in_units = True
     if unit_in not in units:
-        "Input unit {unit_in} not available. Available units: {units}"
+        warn("Input unit {unit_in} not available. Available units: {units}")
+        in_units = False
     if unit_out not in units:
-        "Output unit {unit_out} not available. Available units: {units}"
-    
-    return val*SI[unit_in]/SI[unit_out]  
+        warn("Output unit {unit_out} not available. Available units: {units}")
+        in_units = False
+    if in_units:
+        return val*SI[unit_in]/SI[unit_out]
+    else:
+        return val
 
 def isSubsidenceModel(Model):
     """SubsdenceModel util : Returns a boolean based an object type. Returns True if the object is of 
@@ -1118,9 +1124,9 @@ def is_iterable(var):
     """
     if isinstance(var, str):
         return False
+    elif isSubsidenceModel(var) or isSubsidenceSuite(var):
+        return False
     try:
-        if isSubsidenceModel(var) or isSubsidenceSuite(var):
-            return False
         iter(var)
         return True
     except TypeError:
@@ -1513,48 +1519,6 @@ def moving_rigid_basement(start_basement, end_basement, reservoir_depth, time, v
                         time_decay)
     
     return reservoir_depth/moving_basement
-
-""" Benchmark convolution to compare fft with
-def convolve(array, kernel):
-    # Convolve over an array using the kernel.
-    # https://en.wikipedia.org/wiki/Convolution
-
-    # Parameters
-    # ----------
-    # array : np.ndarray
-    #     Array to be convolved over.
-    # kernel : np.ndarray
-    #     Kernel to convolve with.
-
-    # Returns
-    # -------
-    # result : np.ndarray
-    #     Convoluted array.
-
-    
-    k_size = kernel.shape[0]
-    k_inc = math.floor(k_size/2)
-    result = np.zeros(array.shape)
-
-    for y in range(array.shape[1] - k_size):
-        for x in range(array.shape[0] - k_size):
-            result[x:x+k_size, y: y+k_size] += kernel[:, :, None] * array[x + k_inc, y + k_inc]
-    return result
-
-def convolve_t(array, kernel): # DEPRICATED
-    # size an = len(a) - floor(len(n)/2)
-    k_size = kernel.shape[0]
-    k_inc = math.floor(k_size/2)
-    result = np.zeros(array.shape)
-
-    for t in range(array.shape[2]):
-        for y in range(array.shape[1] - k_size):
-            for x in range(array.shape[0] - k_size):
-
-                result[x:x+k_size, y: y+k_size, t] += kernel * array[x + k_inc, y + k_inc, t]
-
-    return result
-"""
 
 def fft_convolve2d(image, kernel):
     """2D convolution, using FFT

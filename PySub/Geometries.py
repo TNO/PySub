@@ -16,6 +16,7 @@ from PySub import grid_utils as _grid_utils
 from PySub import shape_utils as _shape_utils
 from osgeo import osr
 from shapely import geometry
+from shapely.ops import cascaded_union
 
 class GeometryPoint(_Points.Point):
     def __init__(self, x, y, kwargs):
@@ -143,11 +144,6 @@ class GeometryPolygon():
             p = PolygonPatch(geom.buffer(0), **kwargs)
             ax.add_patch(p) 
     
-    def contains_points(X, Y, shape):
-        return shape.contains(
-            geometry.Point(X, Y)
-            )
-    
     def mask(self, grid):
         mask = np.zeros((grid.dims['y'], grid.dims['x']))
         mask = mask > 0
@@ -169,12 +165,7 @@ class GeometryPolygon():
     
     @property
     def bounds(self):
-        bound_collection = []
-        for shape in self.shapes:
-            bound = np.array(shape.bounds)
-            bound_collection.append(bound)
-        bound_collection = np.array(bound_collection)
-        bounds = _utils.bounds_from_bounds_collection(bound_collection)
+        bounds = cascaded_union(self.shapes).bounds
         return bounds
     
     @property
@@ -250,14 +241,15 @@ def fetch(files, scatter_kwargs = {},
                         x = df[df.columns[0]].values.astype(float)
                     except:
                         raise Exception('Invalid delimiter encountered in {f}, use ";" or ",".')
-                if len(df.columns) == 3:
+                if len(df.columns) == 3 and len(df[df.columns[2]].unique()) != 1:
                     values, X, Y = _shape_utils.load_raster_from_csv(f)
                     values = values.reshape(values.shape[:-1])
                   
                     geometries.append(GeometryRaster(X, Y, values, raster_kwargs))
-                elif len(df.columns) == 2:
-                    shape = [df.values]
-                    geometries.append(GeometryPolygon(shape, shape_kwargs))
+                elif len(df.columns) == 2 or (
+                        len(df.columns) == 3 and len(df[df.columns[2]].unique()) == 1):
+                    shape = geometry.Polygon(df.values[...,:2].astype(float))
+                    geometries.append(GeometryPolygon([shape], shape_kwargs))
                 else:
                     raise Exception(f'Input csv {f} has invalid number of rows: {len(df.columns)}. Use 3 (x, y, mask) for a raster or 2 (x, y) for a polygon.')
             else:

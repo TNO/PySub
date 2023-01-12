@@ -1425,8 +1425,9 @@ def get_reservoir_parameters_from_df(reservoir_parameters):
             reference_stress_rates, density, cmref, b,
             compaction_coefficients, thickness)
             
-def compare_reservoir_names(reservoir_names, pressure_reservoir_names,
-                            name_df = "reservoir parameter", pressure_name_df = "pressure"):
+def compare_reservoir_names(
+        reservoir_names, pressure_reservoir_names,
+        name_df = "reservoir parameter", pressure_name_df = "pressure"):
     missing_reservoirs = list(_utils.a_missing_from_b(reservoir_names, pressure_reservoir_names))
     missing_pressures = list(_utils.a_missing_from_b(pressure_reservoir_names, reservoir_names))
     missing = missing_reservoirs + missing_pressures

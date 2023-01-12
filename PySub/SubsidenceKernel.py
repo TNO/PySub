@@ -211,7 +211,7 @@ def Knothe(radius, depth, knothe_angle):
 
     du = (1 / R ** 2) * np.exp(((-np.pi) * (radius ** 2)) / R ** 2)
     return du
-    
+
 def Van_Opstal(radius, depth, basement_depth, v = 0.25, 
                a12 = -0.778, a21 = 2.0,
                a22 = 2.80,

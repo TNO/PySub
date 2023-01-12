@@ -13,7 +13,7 @@ import xarray as xr
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
-
+from warnings import warn
 from tqdm import tqdm
 
 class ModelSuite:
@@ -984,60 +984,50 @@ class ModelSuite:
             observations = [[i.name for i in j] for j in _observations]
             observations = _utils.flatten_ragged_lists2D(observations)
             observations = (np.unique(observations))
-                
         
-        all_observation_points = []
-        model_names = []
-        for model_name, model_observations in self.observation_points.items():
-            all_observation_points += model_observations
-            model_names += [model_name]*len(model_observations)
-        number_of_observations = len(all_observation_points)            
+        # check for inconsistensies
+        double_named = {
+            o: [
+                m 
+                for m in self.name 
+                if o in self.observation_points[m].names
+                ] 
+            for o in observations
+            }
         
-        double_named = {o: [] for o in observations}
-        counter = {o: 0 for o in observations}
+        dfs = {
+            o: {
+                m: 
+                    self.observation_points[m].as_df.set_index('Observation ID').loc[o].sort_values('Time') 
+                for m in models
+                } 
+            for o, models in double_named.items()
+            }
         
-        if number_of_observations == 1:
-            unique_observations = all_observation_points
-        elif number_of_observations == 1:
-            unique_observations = []
-        else:
-            unique_observations = []
-            for i in range(number_of_observations):
-                if i == 0:
-                    unique_observations.append(all_observation_points[i])
-                    double_named[all_observation_points[i].name].append(model_names[i])
-                else:
-                    current_unique_names = [uo.name for uo in unique_observations]
-                    if all_observation_points[i].name not in current_unique_names:
-                        unique_observations.append(all_observation_points[i])
-                        double_named[all_observation_points[i].name].append(model_names[i])
-                    else:
-                        same_observation_name_indices = np.where(np.array(current_unique_names) == all_observation_points[i].name)[0]
-                        i_counter = 0
-                        for current_same_observation in same_observation_name_indices:
-                            if unique_observations[current_same_observation] == all_observation_points[i]:
-                                pass
-                            else:
-                                if model_names[i] not in double_named[all_observation_points[i].name]:
-                                    double_named[all_observation_points[i].name].append(model_names[i])
-                                if model_names[current_same_observation] not in double_named[all_observation_points[i].name]:
-                                    double_named[all_observation_points[i].name].append(model_names[current_same_observation])
-                            
-                                if i_counter == 0: unique_observations.append(all_observation_points[i])
-                            i_counter += 1
-                counter[all_observation_points[i].name] += 1
+        check_dfs = {
+            o: np.array([[not o1.equals(o2) for o2 in df.values()] for o1 in df.values()]).any(axis = 0)
+            for o, df in dfs.items() 
+            }
         
-        for double_observation, different_models in double_named.items():
+        doubles = {
+            o:
+                np.array(double_named[o])[check] 
+            for o, check in check_dfs.items()
+            }  
+        
+        exception = []
+        for double_observation, different_models in doubles.items():
             if len(different_models) > 1:
                 print_models = ', '.join(different_models)
-                print(f'Warning: The observation "{double_observation}" has entries in the models {print_models} with the same name, but different entries.')
-        
-        ordered_unique_observations = []
-        for observation in observations:
-            names = [uo.name for uo in unique_observations]
-            indices = np.where(np.array(names) == observation)[0]
-            ordered_unique_observations += list(np.array(unique_observations)[indices])
-        return _Points.ObservationCollection(ordered_unique_observations)
+                exception.append(f'The observation "{double_observation}" has entries in the models {print_models} with the same name, but different entries.')
+        if len(exception) > 1:
+            raise Exception('\n'.join(exception))
+       
+        unique_observations = [
+            self.observation_points[m[0]][o] for o, m in double_named.items()
+            ]
+                
+        return _Points.ObservationCollection(unique_observations)
         
     
     def unique_relative(self, observation_name = None, model = None):
@@ -1158,7 +1148,7 @@ class ModelSuite:
             if val in self.unique_reservoirs():
                 index = np.where(unique_reservoirs == val)[0][0]
             else:
-                print(f'Warning: The key {val} does not correspond with an available reservoir')
+                warn(f'Warning: The key {val} does not correspond with an available reservoir')
                 return None
         elif isinstance(val, int):
             if val in list(range(len(unique_reservoirs))):
@@ -1515,7 +1505,7 @@ class ModelSuite:
                     return levels
             levels = _plot_utils.set_contour_levels(contour_levels = levels, contour_steps = contour_steps, drop_value = drop_value)
         elif not _utils.is_itterable(levels):
-            print('Warning: Not enough information to set contour levels. Assign a list to "levels", or assign values to "start", "end" and "contour_steps"')
+            warn('Warning: Not enough information to set contour levels. Assign a list to "levels", or assign values to "start", "end" and "contour_steps"')
         return levels
         
     # Set parameters
@@ -1553,7 +1543,7 @@ class ModelSuite:
             if self._models is None:
                 self._models = []
             if model.name in self.name:
-                print(f'Warning: Model with the name "{model.name}" already in Suite. skipped. Try adding with different name if not the same model.')
+                warn(f'Warning: Model with the name "{model.name}" already in Suite. skipped. Try adding with different name if not the same model.')
             else:
                 model.set_project_folder(self.project_folder.project_folder)
                 self._models.append(model)
@@ -1635,7 +1625,7 @@ class ModelSuite:
                 model.set_errorbar_defaults(self.errorbar_defaults)
                 if not model.name:
                     model.name = 'Model ' + str(i + 1)
-                    print(f'Warning: Model added without name, name set as: {model.name}.')
+                    warn(f'Warning: Model added without name, name set as: {model.name}.')
                 self.add_model(model)
             else:
                 raise Exception('Invalid model type to add to ModelSuite. Add SubsidenceModel object types only.')
@@ -1645,7 +1635,7 @@ class ModelSuite:
         if self.hasattr('models'):
             return True
         else:
-            print(f'Warning: No models in Suite, {function}() failed!')
+            warn(f'Warning: No models in Suite, {function}() failed!')
             return False
     
     def set_observation_points(self, observation_points):
