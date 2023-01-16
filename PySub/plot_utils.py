@@ -11,7 +11,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
 import matplotlib.font_manager as fm
-import cartopy.io.img_tiles as cimgt
 
 from matplotlib import cm
 from warnings import warn
@@ -32,6 +31,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
 
 WHITE_SHADOW = [pe.withStroke(linewidth=2, foreground="white")]
+
 
 def get_unit_label(variable, unit):
     """Get the right unit for each variable.
