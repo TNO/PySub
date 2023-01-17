@@ -110,6 +110,9 @@ class ProjectFolder(object):
     
     def _get_folder(self, folder):
         if self.project_folder is not None:
+            folder_path = os.path.join(self.project_folder, folder)
+            if not os.path.isdir(folder_path):
+                os.makedirs(folder_path)
             return os.path.join(self.project_folder, folder)
         
     def input_file(self, name):

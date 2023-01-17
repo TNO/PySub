@@ -6,7 +6,6 @@ from PySub.SubsidenceSuite import ModelSuite
 
 
 if __name__ == '__main__':
-    # plot.adjust_background(google_service = 'satellite')
     models = []
     
     #%% Make the linear model
