@@ -257,7 +257,7 @@ def adjust_background_keywords(keywords):
         _WMTS_utils.__dict__['URL_KEYWORD_DICT'] = keywords
 
 
-def adjust_background(url = None, 
+def set_background(url = None, 
                       keywords = {},
                       arcgis_service = None,
                       google_service = None):
@@ -270,33 +270,30 @@ def adjust_background(url = None,
     url : string, optional
     Use only if not using standard arcgis or google services!
         URL pointing to a tile source and containing {x}, {y}, and {z}.
-        Such as: 'https://server.arcgisonline.com/ArcGIS/rest/services/\
-            World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}.jpg'
+        Such as: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}.jpg'
         Note that the string must not be formatted. Additional keywords can be 
-        added. Such as: 'https://server.arcgisonline.com/ArcGIS/rest/services/\
-            {map_service}/MapServer/tile/{z}/{y}/{x}.jpg'
+        added. Such as: 'https://server.arcgisonline.com/ArcGIS/rest/services/{map_service}/MapServer/tile/{z}/{y}/{x}.jpg'
         When other keywords are added than {x}, {y}, and {z}, add the keywords 
         by setting the "keywords" argument as for instance:
             keywords = {'map_service': 'World_Shaded_Relief'}
             
         Examples:
-            arcgis service url: ('https://server.arcgisonline.com/ArcGIS/rest/'
-                'services/{map_service}/MapServer/tile/{z}/{y}/{x}.jpg')
-            google service url: ('https://mts0.google.com/vt/lyrs={map_service}'
-                      '@177000000&hl=en&src=api&x={x}&y={y}&z={z}&s=G')
+            arcgis service url: ('https://server.arcgisonline.com/ArcGIS/rest/services/{map_service}/MapServer/tile/{z}/{y}/{x}.jpg')
+            google service url: ('https://mts0.google.com/vt/lyrs={map_service}@177000000&hl=en&src=api&x={x}&y={y}&z={z}&s=G')
     keywords : dict, optional
-    Use only if not using standard arcgis or google services!
+        Use only if not using standard arcgis or google services!
         When other keywords are added to the url (other than than {x}, {y}, 
         and {z}), add the keywords by setting this argument as for instance:
             keywords = {'map_service': 'World_Shaded_Relief'}
     arcgis_service: string, optional
-        https://server.arcgisonline.com/ArcGIS/rest/services/
+        See for available options: 
+            https://server.arcgisonline.com/ArcGIS/rest/services/
         For instance (the default is):
             adjust_background(arcgis_service = 'World_Topo_Map')
     google_service: string, optional
         Choose from: "street", "satellite", "terrain", "only_streets"
-        For instance (the default is):
-            adjust_background(arcgis_service = 'only_street')
+        For instance:
+            adjust_background(arcgis_service = 'only_streets')
 
     """
     default_keywords = _WMTS_utils.__dict__['URL_KEYWORD_DICT']

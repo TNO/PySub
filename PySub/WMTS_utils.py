@@ -3,6 +3,7 @@
 import cartopy
 from PIL import Image
 from string import Formatter
+from cartopy.io.img_tiles import GoogleWTS
 
 URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/{map_service}/MapServer/tile/{z}/{y}/{x}.jpg'
 URL_KEYWORD_DICT = {'map_service': 'World_Topo_Map'}
@@ -10,7 +11,7 @@ URL_KEYWORD_DICT = {'map_service': 'World_Topo_Map'}
 def formatted_string_keywords(string):
     return [fname for _, fname, _, _ in Formatter().parse(string) if fname]
 
-class Tiles(cartopy.io.img_tiles.GoogleWTS):
+class Tiles(GoogleWTS):
     def __init__(self, desired_tile_form='RGB', 
                  cache=False):
         """
