@@ -20,4 +20,6 @@ import PySub.BucketEnsemble as BucketEnsemble
 import PySub.Geometries as Geometries
 import PySub.ProjectFolder as ProjectFolder
 import PySub.SubsidenceKernel as SubsidenceKernel
-import PySub.HorizontalDisplacementKernel as HorizontalDisplacement
+import PySub.HorizontalDisplacementKernel as HorizontalDisplacementKernel
+
+__version__ = '1.1.4'
