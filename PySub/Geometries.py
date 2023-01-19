@@ -20,12 +20,43 @@ from shapely.ops import cascaded_union
 
 class GeometryPoint(_Points.Point):
     def __init__(self, x, y, kwargs):
+        """An object representing a point geometry with standardized 
+        interactivity with the PySub package. Must have methods to plot, mask, 
+        and others.
+        
+        Parameters
+        ----------
+        x : float
+            x-coordinate
+        y : float
+            x-coordinate
+        kwargs : dict
+            Keyword arguments for the function ax.scatter:
+                https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.scatter.html
+
+        Returns
+        -------
+        GeometryPoint.
+
+        """
         self.type = 'point'
         self._x = np.array(x).astype(float)
         self._y = np.array(y).astype(float)
         self.kwargs = kwargs
     
     def plot(self, ax = None, kwargs = None):
+        """Plots the Point object
+
+        Parameters
+        ----------
+        ax : matplotlib.pyplot.axes.Axes object, optional
+            The axis you want to plot the object in. 
+            The default is None. When None a new axis is created.
+        kwargs : dict
+            Keyword arguments for the function ax.scatter:
+                https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.scatter.html
+
+        """
         if kwargs is None:
             kwargs = self.kwargs
         if ax is None:
@@ -39,6 +70,21 @@ class GeometryPoint(_Points.Point):
         ax.scatter(self.x, self.y, **kwargs)
     
     def mask(self, grid):
+        """Mask an xarray dataset with this geometry. In the case of points 
+        the grid cell will be highlighted.
+
+        Parameters
+        ----------
+        grid : xarray.Dataset
+            Dataset with at least the variables x and y.
+
+        Returns
+        -------
+        mask : xarray.DataArray
+            A mask in the shape of the grid argument with where the geometry 
+            overlaps, the value is 1, and where not, is 0.
+
+        """
         ix, iy = np.searchsorted(grid.x, self.x), np.searchsorted(grid.y, self.y)
         mask = np.zeros((grid.dims['y'], grid.dims['x']))
         mask[iy, ix] = 1
@@ -65,6 +111,28 @@ class GeometryPoint(_Points.Point):
 
 class GeometryRaster():
     def __init__(self, X, Y, values, kwargs):
+        """An object representing a raster geometry with standardized 
+        interactivity with the PySub package. Must have methods to plot, mask, 
+        and others.
+        
+        Parameters
+        ----------
+        X : np.array, floats
+            x-coordinates
+        Y : np.array, floats
+            y-coordinates
+        values : np.array, floats
+            values determining the mask. When a value is 0 or lower, it is not
+            considered part of the geometry.
+        kwargs : dict
+            Keyword arguments for the function ax.imshow:
+                https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html
+
+        Returns
+        -------
+        GeometryRaster.
+
+        """
         self.type = 'raster'
         self.X = np.array(X).astype(float)
         self.Y = np.array(Y).astype(float)
@@ -81,6 +149,18 @@ class GeometryRaster():
         return {self.type: (self.X, self.Y, self.values)}
     
     def plot(self, ax = None, kwargs = None):
+        """Plots the Raster object
+
+        Parameters
+        ----------
+        ax : matplotlib.pyplot.axes.Axes object, optional
+            The axis you want to plot the object in. 
+            The default is None. When None a new axis is created.
+        kwargs : dict
+            Keyword arguments for the function ax.imshow:
+                https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html
+
+        """
         bounds = _utils.bounds_from_xy(self.X, self.Y)
         extent = np.array(bounds)[[0, 2, 1, 3]]
         masked_raster = np.ma.masked_where(self.values == 0, self.values)
@@ -95,6 +175,21 @@ class GeometryRaster():
         ax.imshow(flipped_raster, extent = extent, **kwargs)
         
     def mask(self, grid):
+        """Mask an xarray dataset with this geometry.
+
+        Parameters
+        ----------
+        grid : xarray.Dataset
+            Dataset with at least the variables x and y.
+
+        Returns
+        -------
+        mask : xarray.DataArray
+            A mask in the shape of the grid argument with where the geometry 
+            overlaps, the value is 1, and where not, is 0.
+
+        """
+        
         xr_grid = xr.Dataset(coords = {'x': np.unique(self.X),
                                        'y': np.unique(self.Y)})
         xr_grid['mask'] = (('y', 'x'), self.values)
@@ -124,6 +219,22 @@ class GeometryRaster():
 
 class GeometryPolygon():
     def __init__(self, shapes, kwargs):
+        """An object representing a polygon geometry with standardized 
+        interactivity with the PySub package. Must have methods to plot, mask, 
+        and others.
+        
+        Parameters
+        ----------
+        shapes : list, shapely gemoetries
+        kwargs : dict
+            Keyword arguments for the class Polygon:
+                https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.Polygon.html
+
+        Returns
+        -------
+        GeometryPolygon.
+
+        """
         self.type = 'polygon'
         self.shapes = shapes
         self.kwargs = kwargs
@@ -132,6 +243,18 @@ class GeometryPolygon():
         return {self.type: (self.shapes)}
     
     def plot(self, ax = None, kwargs = None):
+        """Plots the Polygon object
+
+        Parameters
+        ----------
+        ax : matplotlib.pyplot.axes.Axes object, optional
+            The axis you want to plot the object in. 
+            The default is None. When None a new axis is created.
+        kwargs : dict
+            Keyword arguments for the class Polygon:
+                https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.Polygon.html
+
+        """
         if ax is None:
             fig, ax = plt.subplots()
             bounds = self.bounds
@@ -145,6 +268,20 @@ class GeometryPolygon():
             ax.add_patch(p) 
     
     def mask(self, grid):
+        """Mask an xarray dataset with this geometry.
+
+        Parameters
+        ----------
+        grid : xarray.Dataset
+            Dataset with at least the variables x and y.
+
+        Returns
+        -------
+        mask : xarray.DataArray
+            A mask in the shape of the grid argument with where the geometry 
+            overlaps, the value is 1, and where not, is 0.
+
+        """
         mask = np.zeros((grid.dims['y'], grid.dims['x']))
         mask = mask > 0
         for shape in self.shapes:
@@ -210,7 +347,37 @@ def from_representative_values(representative_parameters,
 
 def fetch(files, scatter_kwargs = {},
                  shape_kwargs = {},
-                 raster_kwargs = {}):  
+                 raster_kwargs = {}):
+    """Load a Geometry object or multiple objects.
+
+    Parameters
+    ----------
+    files : list or string
+        A string with the path to the object or a list with the paths to the
+        objects.
+    scatter_kwargs : dict
+        Keyword arguments for the function ax.scatter:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.scatter.html
+    shape_kwargs : dict
+        Keyword arguments for the class Polygon:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.Polygon.html
+    raster_kwargs : dict
+        Keyword arguments for the function ax.imshow:
+            https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.imshow.html
+
+    Raises
+    ------
+    Exception
+        DESCRIPTION.
+    TypeError
+        DESCRIPTION.
+
+    Returns
+    -------
+    geometries : TYPE
+        DESCRIPTION.
+
+    """
     if not _utils.is_iterable(files):
         files = [files]
     geometries = []
