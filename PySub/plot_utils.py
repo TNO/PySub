@@ -2790,7 +2790,7 @@ def plot_points_on_map(Model, points = None, labels = None, reservoir = None, ti
     # Any conversion to the desired unit will happen in the plot_subsidence function.
     
     if (show_data and hasattr(Model.grid, 'subsidence')):
-        fig, ax = plot_subsidence(Model, reservoir = reservoir, time = time, buffer = 0, 
+        fig, ax = plot_subsidence(Model, reservoir = reservoir, time = time, buffer = buffer, 
                                   unit = unit,
                                   title = title, 
                                   additional_shapes = additional_shapes, 
