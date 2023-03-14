@@ -2121,15 +2121,12 @@ def ask_for_line(Model,
     Model.line = window.get_line()
     return Model.line
     
-def plot_cross_section(Model, lines = None, variable = 'subsidence', reservoir = None, time = -1, model = None,
+def plot_cross_section(Model, lines = None, variable = 'subsidence', 
+                       reservoir = None, time = -1, model = None,
                        unit = 'cm',
                        num = 1000, 
-                       plot_reservoir_shapes = True,
-                       additional_shapes = [], 
-                       zoom_level = 10, figsize=(8, 8), epsg = 28992,
-                       cross_section_title = None, map_title = None,
-                       contour_levels = None, 
-                       contour_steps = 0.01, 
+                       figsize=(8, 8),
+                       title = None,
                        y_axis_exageration_factor = 2,
                        ylim = None,
                        final = True,
@@ -2138,11 +2135,6 @@ def plot_cross_section(Model, lines = None, variable = 'subsidence', reservoir =
                        legend = True,
                        horizontal_line = None, 
                        plot_kwargs = {},
-                       raster_kwargs = {},
-                       shape_kwargs = {},
-                       contourf_kwargs = {},
-                       contour_kwargs = {},
-                       clabel_kwargs = {},
                        colorbar_kwargs = {},
                        annotation_kwargs = {}):
     
@@ -2177,32 +2169,9 @@ def plot_cross_section(Model, lines = None, variable = 'subsidence', reservoir =
     num : int, optional
         The amount of points sampled along the crossection.build_grid
         The default is 1000.
-    plot_reservoir_shapes : bool, optional
-        When True, the shapes of the reservoirs will be plotted behind the 
-        contours, when False, not. The default is True.
-    additional_shapes : list of PySub.Gemetries objects
-        A list if Geometries to plot inside the figures that are not the reservoirs.
-        Use PySub.Geometries.fetch() to import plottable geometries as a list.
-    zoom_level : int, optional
-        An integer indicating the zoom level for the maps. Low numbers
-        show maps on a large scale, higher numbers show maps on a smaller
-        scale.
-    figsize : tuple, float, optional
-        The size of the figure in inches.
-    epsg : int, optional
-        The available epsg of the WMTS service
-    cross_section_title : str, optional
+    title : str, optional
         The title of the figure displaying the cross section data. 
         The default is None.
-    map_title : str, optional
-        The title of the figure displaying the map and cross section line. 
-        The default is None.
-    contour_levels : list, float, optional
-        Draw contour lines at the specified levels. The values must be in increasing order. 
-        The default is None. When None, the contour lines will be chosen based 
-        on the subsidence data and the contour_steps parameter.
-    contour_steps : float/int, optional
-        The difference in values between the contour levels. The default is 0.01.
     y_axis_exageration_factor : int/float, optional
         The factor the length of the y_axis will be exagerated. If the lowest data 
         point in the graph is -1, the y-axis will be from -y_axis_exageration_factor
@@ -2255,7 +2224,8 @@ def plot_cross_section(Model, lines = None, variable = 'subsidence', reservoir =
 
     Returns
     -------
-    None.
+    fig, ax:
+        The matplotlib figure and axs objects with the cross sections in it.
 
     """
     
@@ -2265,12 +2235,7 @@ def plot_cross_section(Model, lines = None, variable = 'subsidence', reservoir =
     
     plot_kwargs = set_defaults(plot_kwargs, defaults = Model.plot_defaults)
     annotation_kwargs = set_defaults(annotation_kwargs, defaults = Model.annotation_defaults)
-    contourf_kwargs = set_defaults(contourf_kwargs, defaults = Model.contourf_defaults)
-    contour_kwargs = set_defaults(contour_kwargs, defaults = Model.contour_defaults)
-    clabel_kwargs = set_defaults(clabel_kwargs, defaults = Model.clabel_defaults)
     colorbar_kwargs = set_defaults(colorbar_kwargs, defaults = Model.colorbar_defaults)
-    shape_kwargs = set_defaults(shape_kwargs, defaults = Model.shape_defaults)
-    raster_kwargs = set_defaults(raster_kwargs, defaults = Model.raster_defaults)
     
     if not _utils.is_iterable(lines):
         warn(f'Warning: Invalid line type used: {type(lines)}. Use an iterable containing sets of x- and y-coordinates. No cross section plotted.')
@@ -2289,9 +2254,7 @@ def plot_cross_section(Model, lines = None, variable = 'subsidence', reservoir =
                 warn(f'Warning: Invalid line type used: {type(lines)}. Use an iterable containing sets of x- and y-coordinates. No cross section plotted.')
                 return
     
-    if lines is None:
-        lines = ask_for_line(Model, zoom_level = zoom_level, figsize = figsize, epsg = epsg)
-    elif not isinstance(lines, dict):
+    if not isinstance(lines, dict):
         line_dict = {string.ascii_uppercase[i % 26]: line for i, line in enumerate(lines)}
        
     else:
@@ -2315,10 +2278,10 @@ def plot_cross_section(Model, lines = None, variable = 'subsidence', reservoir =
         
         fig.set_size_inches(figsize)
         unit_label = get_unit_label(variable, unit)
-        if cross_section_title is None:
-            cross_section_title = f'Cross section {variable} ({unit_label})'
+        if title is None:
+            title = f'Cross section {variable} ({unit_label})'
             
-        add_title(ax, cross_section_title)
+        add_title(ax, title)
         ax.set_xlabel('Distance (m)')
         ax.set_ylabel(f"{variable.capitalize().replace('_', ' ')} ({unit_label})")
         set_ylim(ax, ylim = ylim, y_axis_exageration_factor = y_axis_exageration_factor, unit_in = 'm', unit_out = unit)
@@ -2329,45 +2292,14 @@ def plot_cross_section(Model, lines = None, variable = 'subsidence', reservoir =
         
         ax.grid()
         
-        if fname:
-            fname_cross_section = f'{fname}_cross_section_{variable}'            
-            savefig(Model, fname_cross_section, svg = svg)
-            
-        plt.show()
-        plt.close()
-        
-        time2D = steps[-1]
-        
-        if map_title is None:           
-            map_title = f'Cross section {variable} ({unit_label}) - {legend_labels[-1]}'
-            
-        
-        fig, ax = plot_subsidence(Model, reservoir = reservoir, time = time2D, buffer = 0, 
-                                  variable = variable,
-                                  unit = unit,
-                                  title = map_title, 
-                                  zoom_level = zoom_level, figsize=figsize, epsg = epsg,
-                                  contour_levels = contour_levels, 
-                                  contour_steps = contour_steps, 
-                                  plot_reservoir_shapes = plot_reservoir_shapes,
-                                  additional_shapes = additional_shapes, 
-                                  final = False,
-                                  contourf_kwargs = contourf_kwargs,
-                                  contour_kwargs = contour_kwargs,
-                                  clabel_kwargs = clabel_kwargs,
-                                  colorbar_kwargs = colorbar_kwargs,
-                                  shape_kwargs = shape_kwargs,
-                                  raster_kwargs = raster_kwargs)
-        
-        add_lines(ax = ax, line = line_dict, annotation_kwargs = annotation_kwargs)
-        
-        if fname:
-            fname_map =f'{fname}_map_{variable}'
-            savefig(Model, fname_map, svg = svg)
-        
-        plt.show()
-        plt.close()
-        
+        if final:
+            if fname:
+                fname_cross_section = f'{fname}_cross_section_{variable}'            
+                savefig(Model, fname_cross_section, svg = svg)
+            plt.show()
+            plt.close()
+        else:
+            return fig, ax
     if _utils.isSubsidenceSuite(Model):
         model = Model.model_label_to_index(model)
         fig, ax = plt.subplots()
@@ -2404,15 +2336,10 @@ def plot_cross_section(Model, lines = None, variable = 'subsidence', reservoir =
         fig.set_size_inches(figsize)
         
         
-        time2D = steps[-1]
-        
         unit_label = get_unit_label(variable, unit)
-        if cross_section_title is None:
-            cross_section_title = f'Cross section {variable} ({unit_label})'
-        
-        
-        
-        add_title(ax, cross_section_title)
+        if title is None:
+            title = f'Cross section {variable} ({unit_label})'
+        add_title(ax, title)
         ax.set_xlabel('Distance (m)')
         ax.set_ylabel(f"{variable.capitalize().replace('_', ' ')} ({unit_label})")
         set_ylim(ax, ylim = ylim, y_axis_exageration_factor = y_axis_exageration_factor, unit_in = 'm', unit_out = unit)
@@ -2420,42 +2347,17 @@ def plot_cross_section(Model, lines = None, variable = 'subsidence', reservoir =
         if legend: ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         ax.grid()
         
-        if fname:
-            fname_cross_section = f'{fname}_cross_section_{variable}'
-            savefig(Model, fname_cross_section, svg = svg)
+        
+        if final:
+            if fname:
+                fname_cross_section = f'{fname}_cross_section_{variable}'
+                savefig(Model, fname_cross_section, svg = svg)
             
-        plt.show()
-        plt.close()
+            plt.show()
+            plt.close()
+        else:
+            return fig, ax
             
-        fig, ax = plot_subsidence(Model, reservoir = reservoir, time = time2D, model = model, 
-                                  variable = variable, 
-                                  buffer = 0, 
-                                   unit = unit,
-                                   title = map_title, 
-                                   zoom_level = zoom_level, figsize=figsize, epsg = epsg,
-                                   contour_levels = contour_levels, 
-                                   contour_steps = contour_steps, 
-                                   plot_reservoir_shapes = plot_reservoir_shapes,
-                                   additional_shapes = additional_shapes, 
-                                   shape_kwargs = shape_kwargs,
-                                   raster_kwargs = raster_kwargs,
-                                   final = False,
-                                   contourf_kwargs = contourf_kwargs,
-                                   contour_kwargs = contour_kwargs,
-                                   clabel_kwargs = clabel_kwargs,
-                                   colorbar_kwargs = colorbar_kwargs)
-        
-        for _ax in ax:
-            add_lines(ax = _ax, line = line_dict, annotation_kwargs = annotation_kwargs)
-        
-        if fname:
-            fname_map = f'{fname}_map_{variable}'
-            savefig(Model, fname_map, svg = svg)
-        
-    if final:
-        plt.show()
-    else:
-        return fig, ax
 
 def plot_reservoirs(Model, reservoir = None, model = None,
                     buffer = 0, annotate = True, 
@@ -4171,18 +4073,33 @@ def plot_map_with_line(Model, lines = None, variable = 'subsidence',
     if lines is None:
         line_dict = ask_for_line(Model, zoom_level = zoom_level, figsize = figsize, epsg = epsg)
         lines = [line_dict]
+    if isinstance(lines, dict):
+        lines = [lines]
+    else:
+        try:
+            lines = np.array(lines)
+        except:
+            raise Exception(f'Invalid type for lines. Lines should be an array like object or dictionary. Is of type: {type(lines)}')
+        if len(lines.shape) == 2:
+            lines = [lines]
+        elif len(lines.shape) == 3:
+            pass
+        else:
+            raise Exception('Lines must be a dictionary or array like object with 2 or 3 dimensions.')
     
     line_type = [type(l) == dict for l in lines]
-    _lines = []
+    
     if not all(line_type):
+        _lines = []
         for l in lines:
             if not type(l) == dict:    
                 line_dict = {}
-                for i, line in enumerate(l):
-                    line_dict[string.ascii_uppercase[i % 26]] = line
+                for i, line_segment in enumerate(l):
+                    line_dict[string.ascii_uppercase[i % 26]] = line_segment
                 _lines.append(line_dict)
             else:
                 _lines.append(l)
+        lines = _lines
                 
     unit_label = get_unit_label(variable, unit)
     
