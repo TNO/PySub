@@ -4073,19 +4073,8 @@ def plot_map_with_line(Model, lines = None, variable = 'subsidence',
     if lines is None:
         line_dict = ask_for_line(Model, zoom_level = zoom_level, figsize = figsize, epsg = epsg)
         lines = [line_dict]
-    if isinstance(lines, dict):
+    elif isinstance(lines, dict):
         lines = [lines]
-    else:
-        try:
-            lines = np.array(lines)
-        except:
-            raise Exception(f'Invalid type for lines. Lines should be an array like object or dictionary. Is of type: {type(lines)}')
-        if len(lines.shape) == 2:
-            lines = [lines]
-        elif len(lines.shape) == 3:
-            pass
-        else:
-            raise Exception('Lines must be a dictionary or array like object with 2 or 3 dimensions.')
     
     line_type = [type(l) == dict for l in lines]
     
