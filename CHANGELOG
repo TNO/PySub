@@ -5,6 +5,13 @@ All notable changes and added or changed example cases added to this project wil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+(1.1.5) 2023-03-14
+# Changed
+- Functions plotting cross sections no longer also plot the map with the lines
+- New function to plot lines on a map:
+	plot_utils.plot_map_with_line
+- Selecting extend of model is made easier with the bounds option in build_model variants
+
 (1.1.4) 2023-01-12
 # Changed
 - Better handling of polygons (shapely based object)

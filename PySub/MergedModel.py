@@ -248,10 +248,14 @@ def _merge(model1, model2, variables = [],
         fill_value=np.nan
     ).compute()
     
-    merged.attrs['bounds'] = _utils.bounds_from_xy(x, y)
     merged.attrs['influence_radius'] = np.max(
         (_model1.influence_radius, _model2.influence_radius)
         )
+    bounds = _utils.bounds_from_xy(x, y)
+    # Influence radius is not necesary since it is already implied here
+
+    merged.attrs['bounds'] = bounds
+    
     merged.attrs['dx'] = dx
     merged.attrs['dy'] = dx
     merged['grid_mask'] = (['y', 'x'], np.zeros((len(y), len(x))))

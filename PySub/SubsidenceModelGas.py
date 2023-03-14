@@ -276,7 +276,8 @@ class SubsidenceModel(_SubsidenceModelBase.SubsidenceModel):
                        cmref = None, 
                        b = None,
                        compaction_coefficients = None, thickness = None,
-                       timesteps = None, pressures = None):
+                       timesteps = None, pressures = None,
+                       bounds = None,):
         """Set the parameters necesary to build and run a model.
 
         Parameters
@@ -383,16 +384,20 @@ class SubsidenceModel(_SubsidenceModelBase.SubsidenceModel):
                 the number of reservoirs (SubsidenceModel.number_of_reservoirs) and n
                 is the number of timesteps (SubsidenceModel.number_of_steps).
             The default is None. Raises Exception when None.
+        bounds : array-like, int/float, optional
+            An array-like object with 4 values representing the corners of the 
+            model. [0] lower x, [1] lower y, [2] upper x, [3] upper y.
+            Default is None. When None, it will check for any set shapes.
+            If there are no shapes, returns an exception.
+            
         """
         
         self.set_reservoirs(reservoirs)
         self.set_dxyradius(dx, dy = dy, influence_radius = influence_radius)
         self.set_shapes(shapefile_paths)
-        self.set_bounds()
+        self.set_bounds(bounds = bounds)
         self.set_timesteps(timesteps)
-        
         self.build_grid()
-        
         self.set_compaction_model_parameters(compaction_model, 
                                   compaction_coefficients = compaction_coefficients,
                                   tau = tau,
@@ -402,8 +407,6 @@ class SubsidenceModel(_SubsidenceModelBase.SubsidenceModel):
                                   b = b)
         self.set_subsidence_model_parameters(subsidence_model, knothe_angles = knothe_angles,
                                   depth_to_basements = depth_to_basements, poissons_ratios = poissons_ratios)
-        
-        
         self.set_depths(depths)
         self.set_thickness(thickness)
         

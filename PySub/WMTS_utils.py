@@ -1,6 +1,5 @@
 """https://scitools.org.uk/cartopy/docs/latest/_modules/cartopy/io/img_tiles.html
 """
-import cartopy
 from PIL import Image
 from string import Formatter
 from cartopy.io.img_tiles import GoogleWTS
@@ -8,8 +7,10 @@ from cartopy.io.img_tiles import GoogleWTS
 URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/{map_service}/MapServer/tile/{z}/{y}/{x}.jpg'
 URL_KEYWORD_DICT = {'map_service': 'World_Topo_Map'}
 
+
 def formatted_string_keywords(string):
     return [fname for _, fname, _, _ in Formatter().parse(string) if fname]
+
 
 class Tiles(GoogleWTS):
     def __init__(self, desired_tile_form='RGB', 
@@ -39,14 +40,13 @@ class Tiles(GoogleWTS):
             k: URL_KEYWORD_DICT[k]
             for k in keywords
             }
-        
-            
+
         # The 'satellite' and 'terrain' styles require pillow with a jpeg
         # decoder.
         if not hasattr(Image.core, "jpeg_decoder") or \
             not Image.core.jpeg_decoder:
             raise ValueError(
-                f"The service requires pillow with jpeg decoding "
+                "The service requires pillow with jpeg decoding "
                 "support.")
         return super().__init__(desired_tile_form=desired_tile_form,
                                 cache=cache)
@@ -59,5 +59,3 @@ class Tiles(GoogleWTS):
             z=tile[2], Z=tile[2],
             **self.keyword_dict)
         return url
-
-

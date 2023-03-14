@@ -4,7 +4,6 @@ Created on Wed Jan 12 08:47:55 2022
 
 @author: davidsb
 """
-import os
 import numpy as np
 import pandas as pd
 from PySub import utils as _utils
@@ -759,8 +758,10 @@ class ObservationCollection:
         df['X'] = _utils.flatten_ragged_lists2D(X)
         df['Y'] = _utils.flatten_ragged_lists2D(Y)
         df['Subsidence (m)'] = _utils.flatten_ragged_lists2D(self.observations)
-        df['Lower error (m)'] = _utils.flatten_ragged_lists2D(self.lower_errors)
-        df['Upper error (m)'] = _utils.flatten_ragged_lists2D(self.upper_errors)
+        try: df['Lower error (m)'] = _utils.flatten_ragged_lists2D(self.lower_errors)
+        except: pass
+        try: df['Upper error (m)'] = _utils.flatten_ragged_lists2D(self.upper_errors)
+        except: pass
         return df
     
     @property

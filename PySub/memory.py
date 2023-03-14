@@ -25,8 +25,6 @@ for candidate in sys.path:
 os.environ['PROJ_LIB'] = os.path.join(environment_location, 'Library\share\proj')
 os.environ['GDAL_DATA'] = os.path.join(environment_location, 'Library\share')
 
-from shapely import geometry
-
 GRID_VARIABLES = ['dx', 'influence_radius', 'reservoirs', 'shapes', 'timesteps']
 
 ## Gas
@@ -363,7 +361,81 @@ def export_grid_to_csv(x, y, values, columns, fname):
     else:
         raise Exception(f'Invalid number of dimension for the variable: {len(values.shape)}. Use 2 or 3 dimensions.')
     _utils.export_df(df, fname)
+
+
+def attach_metadata(ds, crs):
+    """Attach metadata for QGIS, 
+    """
+    if "dx" in ds.coords:
+        ds = ds.drop_vars(["dx", "dy"])
+    ds = ds.rio.write_crs(crs)
+    ds = ds.rio.set_spatial_dims(x_dim="x", y_dim="y")
+    ds.coords["x"].attrs = dict(
+        long_name="x coordinate of projection",
+        standard_name="projection_x_coordinate",
+        axis="X",
+        units="m",
+    )
+    ds.coords["y"].attrs = dict(
+        long_name="y coordinate of projection",
+        standard_name="projection_y_coordinate",
+        axis="Y",
+        units="m",
+    )
+    return ds
+
+def to_netcdf(da, filename, epsg = 28992):
+    """Export a netcdf file of your xarray data array.
+
+    Parameters
+    ----------
+    da : xr.DataArray
+        xarary data array with your variables. must have coordiantes x and y.
+        Tiem optional. other layers are not recommended.
+    filename : str
+        Path to the file you want the netcdf to be saved at. Must end with .nc.
+    epsg : int, optional
+        EPSG code. The default is 28992.
+
+    """
+    if 'reservoir' in da.coords:
+        # Layers other than time, x and y don't do well
+        da = da.sum('reservoir', drop = True)
+    crs = f'epsg:{epsg}'
+    ds_coords = [i for i in ['time', 'y', 'x'] if i in da.coords]
+    ds_coords = ds_coords + [i for i in da.coords if i not in ds_coords]
+    ds = da.transpose(
+        *ds_coords
+        ).sortby(
+            ds_coords
+            ).to_dataset(name = da.name)
+    ds = attach_metadata(ds, crs)        
+    ds.to_netcdf(filename)
     
+def export_netcdf(model, epsg = 28992):
+    """Export a SubsidenceModel object to a netcdf. Each variable stored
+    in the model grid will be exported as a seperate file.
+
+    Parameters
+    ----------
+    model : PySub SubdinceModel object.
+    epsg : int, optional
+        EPSG code. The default is 28992.
+
+    Returns
+    -------
+    None.
+
+    """
+    if _utils.isSubsidenceModel(model):
+        grid = model.grid
+        for name, var in grid.data_vars.items():
+            f = os.path.join(
+                model.project_folder.output_file(
+                    f'{name}.nc')
+                )
+            to_netcdf(var, f, epsg = epsg)
+
 def export_csv(model, variable = 'subsidence', reservoirs = None, time = None):
     """Export a variable from a SubsidenceModel object to a csv file.
 
@@ -1040,7 +1112,7 @@ def import_reservoir_bucket_from_json(import_path):
             pressure_start_end_df,
             pressure_probability_df)
 
-def build_bucket_ensemble(import_paths, name, project_folder):
+def build_bucket_ensemble(import_paths, name, project_folder, bounds = None):
     """Build a bucket ensemble from a collection of Excel templates representing a 
     reservoir, its parameters and probability of parameters.
 
@@ -1053,6 +1125,9 @@ def build_bucket_ensemble(import_paths, name, project_folder):
     project_folder : str, optional
         Path to a directory for the model input and results to be saved in. The default 
         is None. If the project_folder parameter is None, nothing will be saved.
+    bounds : array-like, int/float, optional
+        An array-like object with 4 values representing the corners of the 
+        model. [0] lower x, [1] lower y, [2] upper x, [3] upper y.
 
     Returns
     -------
@@ -1062,8 +1137,12 @@ def build_bucket_ensemble(import_paths, name, project_folder):
     
     (buckets, timesteps, dx, influence_radius, compaction_model, subsidence_model
      ) = import_bucket_ensemble(import_paths)
-    model = _BucketEnsemble.BucketEnsemble(name , project_folder = project_folder)
-    model.set_parameters(buckets, timesteps, dx, influence_radius, compaction_model, subsidence_model)
+    
+    model = _BucketEnsemble.BucketEnsemble(name, project_folder = project_folder)
+    model.set_parameters(
+        buckets, timesteps, dx, influence_radius, compaction_model, 
+        subsidence_model, bounds = bounds
+        )
     return model
 
 ## Build SubsidenceModelGas
@@ -1434,7 +1513,7 @@ def compare_reservoir_names(
     if len(missing) > 0:
         raise Exception(f'The reservoirs {missing} is missing from either the {pressure_name_df} or {name_df} worksheet.')
 
-def build_model(import_path, name = None, project_folder = None):
+def build_model(import_path, name = None, project_folder = None, bounds = None):
     """Build a model from the Excel template.
 
     Parameters
@@ -1444,8 +1523,12 @@ def build_model(import_path, name = None, project_folder = None):
     name : str
         Name of the model.
     project_folder : str, optional
-        Path to a directory for the model input and results to be saved in. The default 
-        is None. If the project_folder parameter is None, nothing will be saved.
+        Path to a directory for the model input and results to be saved in. The 
+        default is None. If the project_folder parameter is None, nothing will 
+        be saved.
+    bounds : array-like, int/float, optional
+        An array-like object with 4 values representing the corners of the 
+        model. [0] lower x, [1] lower y, [2] upper x, [3] upper y.
         
     Returns
     -------
@@ -1483,7 +1566,8 @@ def build_model(import_path, name = None, project_folder = None):
                         compaction_coefficients = compaction_coefficients, 
                         thickness = thickness,
                         timesteps = timesteps, 
-                        pressures = pressures)
+                        pressures = pressures,
+                        bounds = bounds)
     model.project_folder.write_to_input(import_path)
     model.set_points(points)
     model.set_observation_points(observation_points)
@@ -1608,7 +1692,8 @@ def import_cavern_model_from_dfs(model_parameters, cavern_parameters, squeeze_df
 def build_cavern_model(import_path, 
                        name = None,
                        project_folder = None,
-                       cumulative_volume = False):
+                       cumulative_volume = False,
+                       bounds = None):
     """Build a SubsidenceModelCavern.SubsidenceModel from the relevant template.
 
     Parameters
@@ -1626,6 +1711,9 @@ def build_cavern_model(import_path,
         variable is set to True, the entries will be treated as the volume change that 
         has occurred untill that point. If False, the entries will be treated as
         the volume change in that timestep. The default is False.
+    bounds : array-like, int/float, optional
+        An array-like object with 4 values representing the corners of the 
+        model. [0] lower x, [1] lower y, [2] upper x, [3] upper y.
 
     Returns
     -------
@@ -1649,11 +1737,13 @@ def build_cavern_model(import_path,
             
     model = _SubsidenceModelCavern.SubsidenceModel(name, project_folder = project_folder)
     model.set_dx(dx)
+    
     model.set_influence_radius(influence_radius)
     model.set_timesteps(timesteps)
     model.set_reservoirs(reservoir_names)
     model.set_shapes(coordinates)
-    model.set_bounds()
+    
+    model.set_bounds(bounds)
     model.build_grid()
     model.set_depths(depths)
     model.set_lengths(lengths)
@@ -2134,10 +2224,10 @@ def build_model_from_xarray(xarray, name, project_folder = None):
     
     min_x, max_x = np.min(model.x), np.max(model.x)
     min_y, max_y = np.min(model.y), np.max(model.y)
-    min_x += model.influence_radius
-    max_x -= model.influence_radius
-    min_y += model.influence_radius
-    max_y -= model.influence_radius
+    min_x -= model.influence_radius
+    max_x += model.influence_radius
+    min_y -= model.influence_radius
+    max_y += model.influence_radius
     model._bounds = (min_x, min_y, max_x, max_y)
     
     return model

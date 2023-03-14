@@ -115,7 +115,7 @@ def convert_to_grid(grid, name):
         grid[name] = (['y', 'x', 'reservoir', 'time'], griddified)
     # return grid
 
-def generate_grid_from_bounds(bounds, dx, dy=None, timesteps = [1], reservoir_layers = [1], influence_radius=0, include_mask=True):
+def generate_grid_from_bounds(bounds, dx, dy=None, timesteps = [1], reservoir_layers = [1], include_mask=True):
     """
     Generates an x-array object, grid, which stores the subsidence data in a geographic and temporal representative format.
     It is generated using lower and upper limits of the bounds as input.
@@ -138,8 +138,6 @@ def generate_grid_from_bounds(bounds, dx, dy=None, timesteps = [1], reservoir_la
         list, array or dataframe of the labels of the reservoir layers. The default is 1.
     point_ids : array_like, optional
         list, array or dataframe of the label of the points. the default is a single point with label 1.
-    influence_radius : int, float, optional
-        The distance around the bounds of the fields of the area to be studied. The default is 0.0.
     include_mask : boolean, optional
         Create a data variable in the grid object for a mask. The default is True.
 
@@ -152,10 +150,10 @@ def generate_grid_from_bounds(bounds, dx, dy=None, timesteps = [1], reservoir_la
     if dy is None:
         dy = dx
 
-    ox = _utils.round_down(bounds[0] - influence_radius, dx)
-    oy = _utils.round_down(bounds[1] - influence_radius, dy)
-    ex = _utils.round_up(bounds[2] + influence_radius, dx)
-    ey = _utils.round_up(bounds[3] + influence_radius, dy)
+    ox = _utils.round_down(bounds[0], dx)
+    oy = _utils.round_down(bounds[1], dy)
+    ex = _utils.round_up(bounds[2], dx)
+    ey = _utils.round_up(bounds[3], dy)
     nx = int((ex - ox) / dx + 1)
     ny = int((ey - oy) / dy + 1)
 
@@ -174,8 +172,7 @@ def generate_grid_from_bounds(bounds, dx, dy=None, timesteps = [1], reservoir_la
     grid.attrs['dx'] = dx
     grid.attrs['dy'] = dy
     grid.attrs['bounds'] = (ox, oy, ex, ey)
-    grid.attrs['influence_radius'] = influence_radius
-
+    
     return grid
 
 
