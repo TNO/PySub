@@ -33,11 +33,15 @@ class InfluenceKernel:
         InfluenceKernel object.
 
         """
-        self.ds = _grid_utils.generate_grid_from_bounds((0, 0, 0, 0), dx, dy, 
-                                                        influence_radius = influence_radius, 
+        bounds = (
+            -influence_radius, -influence_radius, 
+            influence_radius, influence_radius
+            )
+        self.ds = _grid_utils.generate_grid_from_bounds(bounds, dx, dy, 
                                                         include_mask=False
                                                         ).rename({'x':'kx', 'y':'ky'}
                                                         )
+
 
         r = np.sqrt(self.ds['kx'] ** 2 + self.ds['ky'] ** 2)
         self.ds = self.ds.assign(r=r)
