@@ -261,7 +261,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
         """
         return self._sampled_parameters
     
-    def set_buckets(self, buckets):
+    def set_buckets(self, buckets, bounds = None):
         """Set the buckets.
 
         Parameters
@@ -288,15 +288,23 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
         """
         reservoirs = list(buckets.keys())
         
-        bounds = []
         for r, bucket in buckets.items():     
             file_name = f'{r} lookup tables.csv'
             file_loc = self.project_folder.output_file(file_name)
             bucket.write_lookup_table(file_loc)
-            bucket['shapes']['Values'] = _Geometries.fetch(buckets[r]['shapes']['Values'])
-            bounds += [g.bounds for g in buckets[r]['shapes']['Values']] 
-        biggest_bounds =  _utils.bounds_from_bounds_collection(np.array(bounds))  
-        self.set_bounds(biggest_bounds)
+        
+        if bounds is None:
+            bound_collection = []
+            for r, bucket in buckets.items():     
+                bucket['shapes']['Values'] = _Geometries.fetch(buckets[r]['shapes']['Values'])
+                bound_collection += [g.bounds for g in buckets[r]['shapes']['Values']] 
+            bounds =  _utils.bounds_from_bounds_collection(np.array(bound_collection))
+            bounds[0] = bounds[0] - self.influence_radius
+            bounds[1] = bounds[1] - self.influence_radius
+            bounds[2] = bounds[2] + self.influence_radius
+            bounds[3] = bounds[3] + self.influence_radius
+        
+        self.set_bounds(bounds)
         self._buckets = buckets
         self.number_of_reservoirs = len(self._buckets)
         self._reservoirs = reservoirs
@@ -781,7 +789,8 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
                        dx, 
                        influence_radius, 
                        compaction_model, 
-                       subsidence_model):
+                       subsidence_model,
+                       bounds = None):
         """Set the variables for this type of model. NB: Cannot run calculate_variable
         methods without sampling from the bucket first (using the set_from_samples method).
 
@@ -832,11 +841,15 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
                 - nucleus of strain, Van Opstal 1974
                 - knothe, Stroka et al. 2011. 
             Raises Exception when not one of the above options.
+        bounds : array-like, int/float, optional
+            An array-like object with 4 values representing the corners of the 
+            model. [0] lower x, [1] lower y, [2] upper x, [3] upper y.
         """
-        self.set_buckets(buckets)
         self.set_dx(dx)
         self.set_timesteps(timesteps)
         self.set_influence_radius(influence_radius)
+        self.set_buckets(buckets, bounds = bounds)
+        
         self.build_grid()
         self.set_subsidence_model_type(subsidence_model)
         self.set_compaction_model_type(compaction_model)

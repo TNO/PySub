@@ -581,7 +581,7 @@ def check_shapefiles(shapefile_paths):
 def bounds_from_xy(x, y):
     min_x, min_y = np.min(x), np.min(y)
     max_x, max_y = np.max(x), np.max(y)
-    return (min_x, min_y, max_x, max_y)
+    return [min_x, min_y, max_x, max_y]
 
 def bounds_to_polygon(bounds, buffer = 0):
     polygon = [[bounds[0] - buffer, bounds[1] - buffer],
@@ -1375,7 +1375,7 @@ def bounds_from_collection(shapes):
 def bounds_from_bounds_collection(bound_collection):
     lowest_x, highest_x = np.min(bound_collection[:, 0]), np.max(bound_collection[:, 2])
     lowest_y, highest_y = np.min(bound_collection[:, 1]), np.max(bound_collection[:, 3])
-    return (lowest_x, lowest_y, highest_x, highest_y)
+    return [lowest_x, lowest_y, highest_x, highest_y]
 
 def get_values_cross_section(A, B, data, num = 1000):
     """Sample points on a line between points A and B from the the values in data.

@@ -204,7 +204,7 @@ def plot_probability_distribution(Model, values, probabilities = None, unit = 'c
     if _utils.is_iterable(values):
         number_of_samples = len(values)
         fig, ax = plt.subplots(figsize = figsize)
-        p = _utils.convert_SI(np.array(values), 'm', unit)
+        values = _utils.convert_SI(np.array(values), 'm', unit)
         if probabilities is None:
             probabilities = [1/number_of_samples]*number_of_samples
         p_df = pd.DataFrame()
@@ -233,7 +233,7 @@ def plot_probability_distribution(Model, values, probabilities = None, unit = 'c
         else:
             return fig, ax
     else:
-        raise Exception(f'Invalid input type: {type(p)}')
+        raise Exception(f'Invalid input type: {type(values)}')
 
 
 def adjust_background_url(url):
@@ -1495,15 +1495,7 @@ def resolve_title(Model, title, variable, unit, step = -1, model = None, Suite =
         raise Exception(f"Invalid input type ({type(step)}) for title. Assign a string or a list of strings.")
     return title
 
-def extent_from_model(Model, buffer, influence_radius = True):
-    if influence_radius:
-        try: 
-            buffer += max(list(Model.influence_radius.values()))
-        except: 
-            try:
-                buffer += Model.influence_radius
-            except:
-                pass
+def extent_from_model(Model, buffer):
     ext =  (Model.bounds[0] - buffer, 
             Model.bounds[2] + buffer, 
             Model.bounds[1] - buffer, 
@@ -3785,7 +3777,8 @@ def _cumulative_m(ax, Model, variable, unit, reservoir_index, line_dict, steps, 
     for area, color in zip(areas, c): area.set_facecolor(color)
 
 def plot_overlap_cross_section(Model, lines = None, mode = 'cumulative', 
-                               variable = 'subsidence', reservoir = None, time = -1, model = None,
+                               variable = 'subsidence', reservoir = None, time = -1, 
+                               model = None,
                        unit = 'cm',
                        num = 1000, 
                        zoom_level = 10, figsize = (12, 8),
@@ -4035,9 +4028,8 @@ def plot_map_with_line(Model, lines = None, variable = 'subsidence',
                        unit = 'cm',
                        buffer = 0,
                        num = 1000, 
-                       plot_figsize = (12, 8),
-                       zoom_level = 10, map_figsize=(8, 8), epsg = 28992,
-                       cross_section_title = None,
+                       figsize = (8, 8),
+                       zoom_level = 10, epsg = 28992,
                        title = None,
                        contour_levels = None, 
                        contour_steps = 0.01, 
@@ -4106,10 +4098,7 @@ def plot_map_with_line(Model, lines = None, variable = 'subsidence',
         The size of the figure with maps in inches.
     epsg : int, optional
         The available epsg of the WMTS service
-    cross_section_title : str, optional
-        The title of the figure displaying the cross section data. 
-        The default is None.
-    map_title : str, optional
+    title: str, optional
         The title of the figure displaying the map and cross section line. 
         The default is None.
     contour_levels : list, float, optional
@@ -4180,14 +4169,21 @@ def plot_map_with_line(Model, lines = None, variable = 'subsidence',
 
     """  
     if lines is None:
-        line_dict = ask_for_line(Model, zoom_level = zoom_level, figsize = map_figsize, epsg = epsg)
-    elif not isinstance(lines, dict):
-        line_dict = {}
-        for i, line in enumerate(lines):
-            line_dict[string.ascii_uppercase[i % 26]] = line
-    else:
-        line_dict = lines
+        line_dict = ask_for_line(Model, zoom_level = zoom_level, figsize = figsize, epsg = epsg)
+        lines = [line_dict]
     
+    line_type = [type(l) == dict for l in lines]
+    _lines = []
+    if not all(line_type):
+        for l in lines:
+            if not type(l) == dict:    
+                line_dict = {}
+                for i, line in enumerate(l):
+                    line_dict[string.ascii_uppercase[i % 26]] = line
+                _lines.append(line_dict)
+            else:
+                _lines.append(l)
+                
     unit_label = get_unit_label(variable, unit)
     
     if _utils.isSubsidenceModel(Model):
@@ -4202,7 +4198,7 @@ def plot_map_with_line(Model, lines = None, variable = 'subsidence',
                                       unit = unit,
                                       additional_shapes = additional_shapes, 
                                       title = title, 
-                                      zoom_level = zoom_level, figsize=map_figsize, epsg = epsg,
+                                      zoom_level = zoom_level, figsize=figsize, epsg = epsg,
                                       contour_levels = contour_levels, 
                                       contour_steps = contour_steps, 
                                       plot_reservoir_shapes = plot_reservoir_shapes,
@@ -4214,7 +4210,8 @@ def plot_map_with_line(Model, lines = None, variable = 'subsidence',
                                       shape_kwargs = shape_kwargs,
                                       raster_kwargs = raster_kwargs)
         
-        add_lines(ax = m_ax, line = line_dict, annotation_kwargs = annotation_kwargs)
+        for line_dict in lines:
+            add_lines(ax = m_ax, line = line_dict, annotation_kwargs = annotation_kwargs)
         
         if final:
             if fname:
@@ -4235,7 +4232,7 @@ def plot_map_with_line(Model, lines = None, variable = 'subsidence',
                                   buffer = buffer, 
                                   unit = unit,
                                   title = title, 
-                                  zoom_level = zoom_level, figsize=map_figsize, epsg = epsg,
+                                  zoom_level = zoom_level, figsize=figsize, epsg = epsg,
                                   contour_levels = contour_levels, 
                                   contour_steps = contour_steps, 
                                   shape_kwargs = shape_kwargs,
@@ -4247,7 +4244,8 @@ def plot_map_with_line(Model, lines = None, variable = 'subsidence',
                                   colorbar_kwargs = colorbar_kwargs)
         
         for _ax in m_ax:
-            add_lines(ax = _ax, line = line_dict, annotation_kwargs = annotation_kwargs)
+            for line_dict in lines:
+                add_lines(ax = _ax, line = line_dict, annotation_kwargs = annotation_kwargs)
                
         if final:
             plt.show()

@@ -7,7 +7,7 @@ from PySub import utils as _utils
 import matplotlib.pyplot as plt
 
 class InfluenceKernel:
-    def __init__(self, influence_radius, dx, dy=None, bounds = (0, 0, 0, 0)):
+    def __init__(self, influence_radius, dx, dy=None):
         """Generate a grid that stores the distances from its center. This will be used for 
         convolution over a grid where compaction has been modelled and will translate that 
         compaction to surface deformation along the z-axis.
@@ -30,8 +30,11 @@ class InfluenceKernel:
         InfluenceKernel object.
 
         """
-        self.ds = _grid_utils.generate_grid_from_bounds((0, 0, 0, 0), dx, dy, 
-                                                        influence_radius = influence_radius, 
+        bounds = (
+            -influence_radius, -influence_radius, 
+            influence_radius, influence_radius
+            )
+        self.ds = _grid_utils.generate_grid_from_bounds(bounds, dx, dy, 
                                                         include_mask=False
                                                         ).rename({'x':'kx', 'y':'ky'}
                                                         )

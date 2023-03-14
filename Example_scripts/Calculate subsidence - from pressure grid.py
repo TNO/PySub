@@ -45,7 +45,7 @@ if __name__ == '__main__':
     plot_utils.plot_cross_section(Model, line,
                                   reservoir = None, 
                                   time = ['1995', '2000', '2005', '2010'], 
-                                  service = 'opentopo')
+                                  )
     plot_utils.plot_points_on_map(Model, show_data = True, plot_reservoir_shapes = True, 
                                   annotate_reservoirs = False)
     plot_utils.plot_subsidence_points(Model, points = None, reservoir = None, 

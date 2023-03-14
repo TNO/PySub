@@ -10,7 +10,8 @@ import_path_salt = r"Input example salt.xlsx"
 
 salt_model = build_cavern_model(import_path_salt,
                                 name = 'salt',
-                                project_folder = None)
+                                project_folder = None,
+                                bounds = (210_000, 566_000, 224_000, 580_000))
    
 salt_model.calculate_subsidence()
 
@@ -24,9 +25,14 @@ plot.plot_timeseries(salt_model, points = specified_point)
 plot.plot_points_on_map(salt_model, points = specified_point, scatter_kwargs = dict(c = 'r', ec = 'k'))
 
 import_path_gas = r"Input example linear.json"
-gas_model = build_model(import_path_gas,
-                        name = 'linear', 
-                        project_folder = None)
+gas_model = build_model(
+    import_path_gas,
+    name = 'linear', 
+    project_folder = None,
+    
+    # distinctly different bounds, but overlapping
+    bounds = (205_000, 555_000, 240_000, 585_000)
+    )
 
 gas_model.calculate_compaction()
 gas_model.calculate_subsidence()

@@ -1786,12 +1786,12 @@ class SubsidenceModel:
         Parameters
         ----------
         bounds : array-like, int/float, optional
-            An array-like object with 4 values.
-            [0] lower x, [1] lower y, [2] upper x, [3] upper y.
+            An array-like object with 4 values representing the corners of the 
+            model. [0] lower x, [1] lower y, [2] upper x, [3] upper y.
             Default is None. When None, it will check for any set shapes.
             If there are no shapes, returns an exception.
 
-        Sets
+        Sets/Returns
         ----
         bounds
 
@@ -1799,19 +1799,23 @@ class SubsidenceModel:
         if bounds is None:
             if self.shapes is not None:   
                 bound_collection = np.array([shape.bounds for shape in self.shapes])
-                self._bounds = _utils.bounds_from_bounds_collection(bound_collection)
+                bounds = _utils.bounds_from_bounds_collection(bound_collection)
+                bounds[0] = bounds[0] - self.influence_radius
+                bounds[1] = bounds[1] - self.influence_radius
+                bounds[2] = bounds[2] + self.influence_radius
+                bounds[3] = bounds[3] + self.influence_radius
+                self._bounds = bounds
             else:
                 raise Exception('The function set_bounds requires 4 numeric entries or requires SubsidenceModel object to have shape- or gridfiles set.')
         else:
             bounds = [s for s in bounds if _utils.is_number(s)]
             if len(bounds) == 4:                
                 if self.hasattr('shapes'):   
-                    shapes_per = _utils.flatten_ragged_lists2D(self.shapes)
-                    np_shapes = np.array(shapes_per[0])
-                    if (bounds[2] < np.min(np_shapes[:,0]) or 
-                        bounds[0] > np.max(np_shapes[:,0]) or
-                        bounds[3] < np.min(np_shapes[:,1]) or
-                        bounds[1] > np.max(np_shapes[:,1])):
+                    shapes_per = np.array([s.bounds for s in self.shapes])
+                    if (bounds[0] > np.min(shapes_per[:,0]) or 
+                        bounds[1] > np.min(shapes_per[:,1]) or
+                        bounds[2] < np.min(shapes_per[:,2]) or
+                        bounds[3] < np.max(shapes_per[:,3])):
                         raise Exception(f'Bounds {bounds} do not overlap with set shapes.')
                 self._bounds = bounds
                 
@@ -1863,7 +1867,7 @@ class SubsidenceModel:
             Distance from which the subsidence is set to 0 in m. The default 
             is 0.
         """
-        _utils._check_low_high(influence_radius, 'influence radius', 0, 100000)
+        _utils._check_low_high(influence_radius, 'influence radius', -EPSILON, 100000)
         self._influence_radius = influence_radius
     
     def set_dxyradius(self, dx = None, dy = None, influence_radius = 0):
@@ -2497,8 +2501,7 @@ class SubsidenceModel:
         self.grid = generate_grid_from_bounds(self._bounds, 
                                               self._dx, self._dy, 
                                               timesteps = self._timesteps, 
-                                              reservoir_layers = self._reservoirs, 
-                                              influence_radius = self._influence_radius,
+                                              reservoir_layers = self._reservoirs,
                                               include_mask = True)
         self.nx = self.grid.dims['x']
         self.ny = self.grid.dims['y']
