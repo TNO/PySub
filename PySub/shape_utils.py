@@ -5,23 +5,25 @@ import os
 from osgeo import gdal
 from osgeo import osr
 from osgeo import ogr
+
 # External imports
 from PySub import utils as _utils
 
 import shapefile as shp
 from shapely import geometry
+from shapely.ops import unary_union
 import pyproj
 import numpy as np
 import pandas as pd
 
 
-def ogr_polygon(coords):       
+def ogr_polygon(coords):
     """Make a polygon of the ogr.Geometry type Polygon.
 
     Parameters
     ----------
     coords : array-like
-        2D array-like object with the shape (2, m), where 2 is for the x- and 
+        2D array-like object with the shape (2, m), where 2 is for the x- and
         y-coordinates and m is the number of points that define the polygon.
 
     Returns
@@ -37,6 +39,19 @@ def ogr_polygon(coords):
     poly.AddGeometry(ring)
     return poly.ExportToWkt()
 
+
+def get_polygon_coords(geom):
+    if geom.type != "Polygon":
+        raise Exception("Not a polygon!")
+    else:
+        exterior_coords = geom.exterior.coords[:]
+        interior_coords = []
+        for interior in geom.interiors:
+            if len(interior_coords[:]) > 0:
+                interior_coords += interior.coords[:]
+        return exterior_coords, interior_coords
+
+
 def extract_poly_coords(geom):
     """Extract the relevant coordinates of a shapely geometry
 
@@ -44,14 +59,14 @@ def extract_poly_coords(geom):
     ----------
     geom : shapely.geometry type
         The polygon
-    
+
     Returns
     -------
-    exterior_coords: 2D np.ndarray
-        an m by 2 shaped numpy array with the cordinates of the points that
-        form the outside rim of the polygon.
+    exterior_coords: list of 2D np.ndarrays
+        The list contains a 2D np.ndarray with the
+        shape (m, 2) for each exterior on the polygon.
     interior_coords: list of 2D numpy arrays
-        If the polygon has holes in it, it is defined 
+        If the polygon has holes in it, it is defined
         through these coordinates. The list contains a 2D np.ndarray with the
         shape (m, 2) for each hole in the polygon.
 
@@ -59,26 +74,28 @@ def extract_poly_coords(geom):
     ------
     https://stackoverflow.com/questions/21824157/how-to-extract-interior-polygon-coordinates-using-shapely
     """
-    if geom.type == 'Polygon':
-        exterior_coords = geom.exterior.coords[:]
-        interior_coords = []
-        for interior in geom.interiors:
-            interior_coords += interior.coords[:]
-    elif geom.type == 'MultiPolygon':
+    if geom.type == "Polygon":
+        exterior_coords, interior_coords = get_polygon_coords(geom)
+        exterior_coords = [exterior_coords]
+        if len(interior_coords) > 0:
+            interior_coords = [interior_coords]
+    elif geom.type == "MultiPolygon":
         exterior_coords = []
         interior_coords = []
         for part in geom:
             epc = extract_poly_coords(part)  # Recursive call
-            exterior_coords += epc['exterior_coords']
-            interior_coords += epc['interior_coords']
+            exterior_coords += epc[0]
+            if len(interior_coords) > 0:
+                interior_coords += epc[1]
     else:
-        raise ValueError('Unhandled geometry type: ' + repr(geom.type))
-    return (np.array(exterior_coords), 
-            [np.array(i) for i in interior_coords])
+        raise ValueError("Unhandled geometry type: " + repr(geom.type))
 
-def save_polygon(geometries, fname, epsg, fields = None):
+    return (exterior_coords, interior_coords)
+
+
+def save_polygon(geometries, fname, epsg, fields=None):
     """Makes a shapefile without any properties from a list of list of coordinates.
-    
+
     Parameters
     ----------
     geometries : list of polygons. Polygons are as a list of coordinates.
@@ -96,13 +113,13 @@ def save_polygon(geometries, fname, epsg, fields = None):
     None.
 
     """
-    driver = ogr.GetDriverByName('Esri Shapefile')
+    driver = ogr.GetDriverByName("Esri Shapefile")
     ds = driver.CreateDataSource(fname)
-    layer = ds.CreateLayer('', None, ogr.wkbPolygon)
+    layer = ds.CreateLayer("", None, ogr.wkbPolygon)
     # Add one attribute
-    layer.CreateField(ogr.FieldDefn('id', ogr.OFTInteger))
+    layer.CreateField(ogr.FieldDefn("id", ogr.OFTInteger))
     if fields is not None:
-        layer.CreateField(ogr.FieldDefn('value', ogr.OFTReal))
+        layer.CreateField(ogr.FieldDefn("value", ogr.OFTReal))
 
     defn = layer.GetLayerDefn()
 
@@ -110,22 +127,24 @@ def save_polygon(geometries, fname, epsg, fields = None):
 
         # Create a new feature (attribute and geometry)
         feat = ogr.Feature(defn)
-        feat.SetField('id', i)
+        feat.SetField("id", i)
         if fields is not None:
-            feat.SetField('value', fields[i])
-    
+            feat.SetField("value", fields[i])
+
         # Make a geometry, from Shapely object
         polygon = ogr.CreateGeometryFromWkt(ogr_polygon(geom))
         feat.SetGeometry(polygon)
-    
+
         layer.CreateFeature(feat)
         feat = polygon = None  # destroy these
-    
+
         # Save and close everything
     ds = layer = feat = polygon = None
 
+
 def _get_projection_file(fname):
-    return os.path.splitext(fname)[0]+'.prj'
+    return os.path.splitext(fname)[0] + ".prj"
+
 
 def _get_projection(fname):
     prj_f = _get_projection_file(fname)
@@ -133,12 +152,14 @@ def _get_projection(fname):
         crs = pyproj.CRS.from_wkt(prj.read())
     return crs
 
+
 def _make_projection(fname, epsg):
     prj_f = _get_projection_file(fname)
-    
+
     wkt_string = pyproj.CRS.from_epsg(epsg).to_wkt()
     with open(prj_f, "w") as f:
         f.write(wkt_string)
+
 
 def get_shapely(fname):
     shapes = shp.Reader(fname)
@@ -146,12 +167,13 @@ def get_shapely(fname):
     geometries = []
     for s in shapes:
         geo_json = s.shape.__geo_interface__
-        geometry_type = geo_json['type'] 
-        
+        geometry_type = geo_json["type"]
+
         shapely_type = getattr(geometry, geometry_type)
-        geom = shapely_type(s['geometry']['coordinates'][0])
+        geom = shapely_type(s["geometry"]["coordinates"][0])
         geometries.append(geom)
     return geometries, crs
+
 
 def _get_polygon(fname, encoding):
     with shp.Reader(fname) as shapes:
@@ -160,11 +182,13 @@ def _get_polygon(fname, encoding):
         for s in shapes:
             geo_json = s.shape.__geo_interface__
             shape = geometry.shape(geo_json)
-            if geo_json['type'] == 'MultiPolygon':
+            if geo_json["type"] == "MultiPolygon":
                 geometries = geometries + list(shape)
             else:
                 geometries.append(shape)
+        geometries = [unary_union(geometries)]
     return geometries, crs
+
 
 def get_polygon(fname):
     """Get the xy coordinates of the polygons in a shapefile.
@@ -184,21 +208,22 @@ def get_polygon(fname):
 
     """
 
-    geometries, crs = _get_polygon(fname, 'utf-8') # 
+    geometries, crs = _get_polygon(fname, "utf-8")  #
     if len(geometries) == 0:
-        raise Exception(f'Shapefile doe not use utf-8 encoding: \n {fname}')
+        raise Exception(f"Shapefile doe not use utf-8 encoding: \n {fname}")
     return geometries, crs
 
-def save_raster(data, x, y, dx, dy, epsg, fname, fileformat = "GTiff"):
+
+def save_raster(data, x, y, dx, dy, epsg, fname, fileformat="GTiff"):
     """Save 2D, 3D, or 4D data is tiff files. 2D data will be stored as
-    a tiff file with 1 band, 3D data as multibanded tiff and 4D data will 
+    a tiff file with 1 band, 3D data as multibanded tiff and 4D data will
     be stacked to fit multibanded data.
 
     Parameters
     ----------
     data : np.ndarray, floats
         2D, 3D or 4D numpy array. With first dimension being x, the second being y and 3rd or 4th arbitrary.
-        The 3rd dimension will be the bands of the tif-file. When 4 dimensions, the layers will be stacked along the 
+        The 3rd dimension will be the bands of the tif-file. When 4 dimensions, the layers will be stacked along the
         3rd dimension to fit into 3 bands. Not more than 4 dimensions is allowed.
     x : np.ndarray, floats
         2D coordinates over the x-axis.
@@ -227,25 +252,33 @@ def save_raster(data, x, y, dx, dy, epsg, fname, fileformat = "GTiff"):
     if n_dims == 2:
         transposed_data = data.reshape((1, data.shape[0], data.shape[1]))
     elif n_dims == 3:
-        transposed_data = np.transpose(data, axes = (2,0,1))
+        transposed_data = np.transpose(data, axes=(2, 0, 1))
     else:
-        raise Exception(f'Number of dimensions supported for raster exportation is 2 or 3. Number of dimensions is {len(data.shape)}')
-    
+        raise Exception(
+            f"Number of dimensions supported for raster exportation is 2 or 3. Number of dimensions is {len(data.shape)}"
+        )
+
     srs = osr.SpatialReference()
     srs.SetFromUserInput(f"EPSG:{epsg}")
-    
+
     driver = gdal.GetDriverByName(fileformat)
-    dst_ds = driver.Create(fname, xsize=transposed_data.shape[2], ysize=transposed_data.shape[1],
-                    bands=transposed_data.shape[0], eType=gdal.GDT_Byte)
-    
+    dst_ds = driver.Create(
+        fname,
+        xsize=transposed_data.shape[2],
+        ysize=transposed_data.shape[1],
+        bands=transposed_data.shape[0],
+        eType=gdal.GDT_Byte,
+    )
+
     geotransform = (min(x), dx, 0, min(y), 0, dy)
     dst_ds.SetProjection(srs.ExportToWkt())
     dst_ds.SetGeoTransform(geotransform)
     for i, raster in enumerate(transposed_data):
-        dst_ds.GetRasterBand(i+1).WriteArray(raster)
+        dst_ds.GetRasterBand(i + 1).WriteArray(raster)
     dst_ds = None
-    
-def load_raster(fname, layer = None):
+
+
+def load_raster(fname, layer=None):
     """
 
     Parameters
@@ -253,7 +286,7 @@ def load_raster(fname, layer = None):
     fname : str
         Path to the location of the file.
     layer : int, optional
-        The layer to be loaded from the .tif raster file in bands (starting from 1). 
+        The layer to be loaded from the .tif raster file in bands (starting from 1).
         The default is None.
 
     Returns
@@ -268,48 +301,55 @@ def load_raster(fname, layer = None):
     """
     # src = rasterio.open(fname)
     # crs = src.crs.wkt if src.crs is not None else None
-    
+
     src = gdal.Open(fname)
     if src is None:
-        raise Exception(f'Can not open file:\n{fname}')
-    crs = src.GetProjection() # wkt
-    
+        raise Exception(f"Can not open file:\n{fname}")
+    crs = src.GetProjection()  # wkt
+
     if layer is None:
         data = src.GetRasterBand(1).ReadAsArray()
     else:
         data = src.GetRasterBand(layer).ReadAsArray()
     data = data[None, :, :]
     ulx, xres, xskew, uly, yskew, yres = src.GetGeoTransform()
-    lrx = ulx + (src.RasterXSize * xres + xres/2)
-    lry = uly + (src.RasterYSize * yres + yres/2)
+    lrx = ulx + (src.RasterXSize * xres + xres / 2)
+    lry = uly + (src.RasterYSize * yres + yres / 2)
     x = np.linspace(ulx, lrx, src.RasterXSize)
     y = np.linspace(uly, lry, src.RasterYSize)
     src = None
     return data, x, y, crs
 
-def load_raster_from_csv(fname, delimiter = ';', header = 0, decimal = ',', method = 'linear', nan_values = 0):
-    df = pd.read_csv(fname, delimiter = delimiter, header = header, decimal = decimal)
-    df = df.replace(',', '.', regex = True)
-    try: 
+
+def load_raster_from_csv(
+    fname, delimiter=";", header=0, decimal=",", method="linear", nan_values=0
+):
+    df = pd.read_csv(
+        fname, delimiter=delimiter, header=header, decimal=decimal
+    )
+    df = df.replace(",", ".", regex=True)
+    try:
         x = df[df.columns[0]].values.astype(float)
     except:
         try:
-            df = pd.read_csv(fname, delimiter = ',', header = header, decimal = decimal)
+            df = pd.read_csv(
+                fname, delimiter=",", header=header, decimal=decimal
+            )
             x = df[df.columns[0]].values.astype(float)
         except:
             raise Exception('Invalid delimiter encountered, use ";" or ",".')
     y = df[df.columns[1]].values.astype(float)
     values = df[df.columns[2:]].values.astype(float)
-    
+
     ids = np.where(values != nan_values)[0]
-    
+
     xs, ys = np.unique(x[ids]), np.unique(y[ids])
     dx = np.min(np.abs(np.diff(xs)))
     xs = _utils.stepped_space(np.min(xs), np.max(xs), dx)
     ys = _utils.stepped_space(np.min(ys), np.max(ys), dx)
     X, Y = np.meshgrid(xs, ys)
     points = np.array((x, y)).T
-    interpolated_data = _utils.interpolate_grid_from_points(points[ids], values[ids], (X, Y), method = method)
+    interpolated_data = _utils.interpolate_grid_from_points(
+        points[ids], values[ids], (X, Y), method=method
+    )
     return interpolated_data, X, Y
-
-    
