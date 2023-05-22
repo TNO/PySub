@@ -119,18 +119,13 @@ def pick_from_kwargs(kwargs, index, number_of_entries):
         the arguments. Selected for a specific entry.
 
     """
-    adjusted_kwargs = {
-        (kw): (
-            arg[index]
-            if (
-                False
-                if not is_iterable(arg)
-                else (len(arg) == number_of_entries)
-            )
-            else kwargs[kw]
-        )
-        for kw, arg in kwargs.items()
-    }
+    adjusted_kwargs = {}
+    for kw, arg in kwargs.items():
+        if is_iterable(arg):
+            assert len(arg) == number_of_entries
+            adjusted_kwargs[kw] = arg[index]
+        else:
+            adjusted_kwargs[kw] = arg
     return adjusted_kwargs
 
 
@@ -143,7 +138,7 @@ def poly_func(v, A, B, C, D, E, F, G, H, I, J, K):
     v : float
         Variable.
     A to M : float
-        POlynomial coefficients.
+        Polynomial coefficients.
 
     Returns
     -------

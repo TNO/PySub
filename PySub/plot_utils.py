@@ -392,8 +392,8 @@ def get_background(
             List with 4 values representing the extend of the figure
             of the model grid:
             [0] lower x
-            [1] lower y
-            [2] upper x
+            [1] upper x
+            [2] lower y
             [3] upper y..
     fig : a matpltlib.pyplot.Figure object
     ax : a matpltlib.pyplot.Ax or cartopy.mpl.geoaxes.GeoAxesSubplot object
@@ -813,13 +813,13 @@ def add_geometries(
             else:
                 raise Exception(f"Invalid type of geometry: {geom.type}.")
             individual_kwargs = _utils.pick_from_kwargs(
-                kwargs, i, (int(count_dict[geom.type]))
+                kwargs, i, int(count_dict[geom.type])
             )
             geom.plot(ax, individual_kwargs)
 
 
 def add_shapes(ax, geometries=[], shape_kwargs={}):
-    """Add Polygon objects to the ax object
+    """Add Polygon objects to the ax object.
 
     Parameters
     ----------
@@ -873,12 +873,12 @@ def add_rasters(ax, rasters=[], raster_kwargs={}):
 def add_annotations(ax, labels, points, annotation_kwargs={}):
     annotations = [
         ax.annotate(
-            label, point, path_effects=WHITE_SHADOW, **annotation_kwargs
+            label, point, **annotation_kwargs
         )
         for label, point in zip(labels, points)
     ]
     adjust_text(
-        annotations, arrowprops=dict(arrowstyle="-", color="k", lw=0.5)
+        annotations, arrowprops=dict(arrowstyle="-", color="k", lw=0.5), ax=ax
     )
 
 
@@ -1384,8 +1384,9 @@ def add_cross_section(
     plot_kwargs={},
     annotation_kwargs={},
 ):
-    """Add cross sections through the data to an existing axis. Data in grid format
-    gets interpolated linearly between the points in line.
+    """Add cross sections through the data to an existing axis.
+
+    Data in grid format gets interpolated linearly between the points in line.
 
     Parameters
     ----------
@@ -1844,6 +1845,10 @@ def resolve_title(
             f"Invalid input type ({type(step)}) for title. Assign a string or a list of strings."
         )
     return title
+
+
+def extent_from_bound(bound):
+    return (bound[0], bound[2], bound[1], bound[3])
 
 
 def extent_from_model(Model, buffer):
