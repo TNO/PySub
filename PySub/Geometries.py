@@ -340,7 +340,7 @@ class _crs:
             if not self.crs is None:
                 if self.crs != crs:
                     raise Exception(
-                        f"Sources use different coordinate reference systems: {crs} and {self.crs}"
+                        f"Sources use different coordinate reference systems: {crs} \nand \n{self.crs}"
                     )
 
 
