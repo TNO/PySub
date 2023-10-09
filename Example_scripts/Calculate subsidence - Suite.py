@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-"""Pilotscript for calculating and comparing multiple subsidence model scenarios
+"""Example script for calculating and comparing multiple subsidence model scenarios
 using the ModelSuite feature from PySub.
 """
 from PySub import plot_utils as plot
