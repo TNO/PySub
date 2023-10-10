@@ -28,7 +28,11 @@ More cases are displayed in these example scripts. Examples are given for:
 - **Calculate subsidence - BucketEnsemble.py**: Probabilistic analyses using a bucket method (see documentation).
 - **Calculate subsidence - Suite.py**: Running and comparing multiple models (Suites)
 - **Calculate subsidence - from pressure grid.py**: How to implement data from grids.
-- **Calculate subsidence - Salt moving rigid basement.py**: Run a model where salt subsidence behaves according to the miving rigid basement method (source)
+- **Calculate subsidence - Salt moving rigid basement.py**: Run a model where salt subsidence behaves according to the moving rigid basement method (source)
 
 ## Documentation 
 The documentation on this framework is split up in three parts: The technical manual, the user manual and a case study. In the technical manual the 
+
+# Plaatje
+# KEM16 project
+# Licentie
