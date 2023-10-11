@@ -40,6 +40,3 @@ More cases are displayed in example scripts in the folder Example_scripts. Examp
 
 ## Documentation 
 The documentation (available in the folder Documentation) on this framework is split up in three parts: The technical manual, the user manual and a case study. In the technical manual the methods to determine the subsidence are explained. In the user manual the input files are elaborated on and instructions for entering the variables are given. When appropriate, a range of valid values is given. The case study elaborates on some of the use cases and shows some results.
-
-# Plaatje
-# Licentie
