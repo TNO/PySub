@@ -10,7 +10,7 @@ In this README the following is covered:
 
 Below, a hypothetical subsidence bowl is displayed in a contour plot, together with two cross sections where individual contributions of gas fields are highlighted:
 
-![Model](https://github.com/TNO/PySub/blob/main/Subsidence_bowl_top_view.png)
+![Model](https://github.com/TNO/PySub/blob/main/Subsidence_bowl_topview.png?raw=True)
 
 ![Model](https://github.com/TNO/PySub/blob/main/Subsidence_bowl_AB.png)
 
