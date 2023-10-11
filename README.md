@@ -36,7 +36,7 @@ More cases are displayed in example scripts in the folder Example_scripts. Examp
 - **Calculate subsidence - BucketEnsemble.py**: Probabilistic analyses using a bucket method (see documentation).
 - **Calculate subsidence - Suite.py**: Running and comparing multiple models (Suites)
 - **Calculate subsidence - from pressure grid.py**: How to implement data from grids.
-- **Calculate subsidence - Salt moving rigid basement.py**: Run a model where salt subsidence behaves according to the moving rigid basement method (source)
+- **Calculate subsidence - Salt moving rigid basement.py**: Run a model where salt subsidence behaves according to the moving rigid basement method ([source](https://www.nlog.nl/sites/default/files/tno_rapport_waddenzee_final_v17092012_public%20version%20-gelakt.pdf))
 
 ## Documentation 
 The documentation (available in the folder Documentation) on this framework is split up in three parts: The technical manual, the user manual and a case study. In the technical manual the methods to determine the subsidence are explained. In the user manual the input files are elaborated on and instructions for entering the variables are given. When appropriate, a range of valid values is given. The case study elaborates on some of the use cases and shows some results.
