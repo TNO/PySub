@@ -19,6 +19,7 @@ Below, a hypothetical subsidence bowl is displayed in a contour plot, together w
 ## Installation
 First clone the package to your local machine. You must have conda as package installer, Anaconda/Miniconda is optional. If you have Anaconda/Miniconda open Anaconda prompt, else use command prompt. Type `cd` to the location where the package is installed. For isntance:
 >cd C:\Users\user\Documents\PySub
+
 This must be the folder where the setup.py file is in.
 
 To install the environment used in this package:
