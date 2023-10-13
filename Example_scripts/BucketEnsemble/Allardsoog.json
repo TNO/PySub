@@ -21,9 +21,9 @@
     },
     "Reservoir parameters": {
         "Shapefile location": {
-            "Min": "\\\\tsn.tno.nl\\Data\\sv\\sv-069554\\Kluis\\Lop_Proj_2021_EZK\\B12_KEM16\\WP4\\sampledata\\Allardsoog.shp",
-            "Mid": "\\\\tsn.tno.nl\\Data\\sv\\sv-069554\\Kluis\\Lop_Proj_2021_EZK\\B12_KEM16\\WP4\\sampledata\\Allardsoog.shp",
-            "Max": "\\\\tsn.tno.nl\\Data\\sv\\sv-069554\\Kluis\\Lop_Proj_2021_EZK\\B12_KEM16\\WP4\\sampledata\\Allardsoog.shp"
+            "Min": "../Tutorials/Shapefiles/Allardsoog.shp",
+            "Mid": "../Tutorials/Shapefiles/Allardsoog.shp",
+            "Max": "../Tutorials/Shapefiles/Allardsoog.shp"
         },
         "Depth to basement (m)": {
             "Min": 4500,

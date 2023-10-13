@@ -11,7 +11,7 @@ import pandas as pd
 # internal imports
 from PySub.grid_utils import generate_grid_from_bounds
 from PySub import SubsidenceKernel as _SubsidenceKernel
-from PySub import HorizontalDisplacementKernel as _HKernel
+from PySub import OtherDisplacementKernel as _HKernel
 from PySub import SubsidencePointKernel as _SubsidencePointKernel
 from PySub import plot_utils as _plot_utils
 from PySub import shape_utils as _shape_utils
@@ -1090,7 +1090,6 @@ class SubsidenceModel:
         if hasattr(self, "grid"):
             grid_var = hasattr(self.grid, var)
         if not grid_var:
-
             if _var in self.__dict__:
                 if _utils.is_iterable(self.__dict__[_var]):
                     if len(self.__dict__[_var]) > 0:
@@ -1964,7 +1963,6 @@ class SubsidenceModel:
                     f"Set {name} with an iterable or a link to a file. Invalid type encountered {type(var)}."
                 )
         else:
-
             self._check_dim1D(name, var)
 
             if _utils.is_list_of_strings(list(var)):
