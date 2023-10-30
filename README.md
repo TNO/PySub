@@ -17,7 +17,7 @@ Below, a hypothetical subsidence bowl is displayed in a contour plot, together w
 ![Model](https://github.com/TNO/PySub/blob/main/Subsidence_bowl_CD.png)
 
 ## Installation
-First clone the package to your local machine. You must have conda as package installer, Anaconda/Miniconda is optional. If you have Anaconda/Miniconda open Anaconda prompt, else use command prompt. Type `cd` to the location where the package is installed. For isntance:
+First clone the package to your local machine. You must have conda as package installer, Anaconda/Miniconda is optional. If you have Anaconda/Miniconda open Anaconda/Miniconda prompt, else use command prompt. Type `cd` to the location where the package is installed. For instance:
 >cd C:\Users\user\Documents\PySub
 
 This must be the folder where the setup.py file is in.
