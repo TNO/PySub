@@ -25,8 +25,15 @@ This must be the folder where the setup.py file is in.
 To install the environment used in this package:
 >conda env create -n YOURENVIRONMENT -f PySub.yml
 
-Then, to make sure the scripts can be found:
+You can change YOURENVIRONMENT to a name of your choosing, we recommend using the environment name PySub.
+
+Then, activate the environment by typing:
+>conda activate YOURENVIRONMENT
+
+And make sure the scripts can be found with:
 >pip install -e .
+
+Keep in mind that the space and "." after "-e" are also required!
 
 The environment comes with a working Spyder and Jupyter Notebook built.
 
