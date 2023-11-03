@@ -35,7 +35,11 @@ And make sure the scripts can be found with:
 
 Keep in mind that the space and "." after "-e" are also required!
 
-The environment comes with a working Spyder and Jupyter Notebook built.
+The environment comes with a working Spyder and Jupyter Notebook built. Which you can open with
+> spyder -p .
+
+or
+>jupyter notebook
 
 ## Tutorials
 To help you getting started with PySub there are 4 tutorials available in the Tutorials folder. These are Jupyter notebooks that assist you in running simple example models and explain the steps, function arguments and results.
