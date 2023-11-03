@@ -25,6 +25,8 @@ from PySub import WMTS_utils as _WMTS_utils
 from PySub import Points as _Points
 from PySub.SubsidenceSuite import ModelSuite as _ModelSuite
 
+from tkinter import Tk, Button, Entry, Label, messagebox
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -872,9 +874,7 @@ def add_rasters(ax, rasters=[], raster_kwargs={}):
 
 def add_annotations(ax, labels, points, annotation_kwargs={}):
     annotations = [
-        ax.annotate(
-            label, point, **annotation_kwargs
-        )
+        ax.annotate(label, point, **annotation_kwargs)
         for label, point in zip(labels, points)
     ]
     adjust_text(
@@ -2520,10 +2520,6 @@ def add_errorbars(ax=None, observations=None, unit="cm", errorbar_kwargs={}):
         return fig, ax
 
 
-from tkinter import Tk, Button, Entry, Label, messagebox
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
-
 class AskForLine:
     def __init__(
         self,
@@ -2539,7 +2535,6 @@ class AskForLine:
         self.coordinates = []
         self.root = Tk()
         self.root.title("Click for line")
-        # self.root.columnconfigure
 
         # Figure
         self.fig, self.ax = plot_reservoirs(
