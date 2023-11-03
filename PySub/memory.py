@@ -14,21 +14,6 @@ from PySub import BucketEnsemble as _BucketEnsemble
 from PySub import Points as _Points
 from matplotlib import pyplot as plt
 
-import sys
-from pathlib import Path
-
-for candidate in sys.path:
-    if "envs" in candidate:
-        p = Path(candidate)
-        environment_location = os.path.join(
-            *p.parts[: p.parts.index("envs") + 2]
-        )
-        break
-
-os.environ["PROJ_LIB"] = os.path.join(
-    environment_location, "Library\share\proj"
-)
-os.environ["GDAL_DATA"] = os.path.join(environment_location, "Library\share")
 
 GRID_VARIABLES = [
     "dx",
