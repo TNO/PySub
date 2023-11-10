@@ -2,11 +2,11 @@
 PySub is a python package with a modelling framework containing tools to predict subsidence caused by mining activities and can make subsidence prognoses, show the results and relevant statistical characteristics. PySub is developed within in the KEM-16 project as an element of a wider toolbox with the aim to model and show how contributions from multiple mining activities be discriminated. No new development of PySub is anticipated.
 The output consists of overview text files, a variety of figures and stored models. It builds on top of other open source packages: numpy, xarray, pandas, numba, shapely, shapefile, osgeo, pyproj, descartes, matplotlib, cartopy, tqdm, adjustText and scipy.
 In this README the following is covered:
-- [Installation](Installation)
-- [Tutorials](Tutorials)
-- [Example scripts](Example-scripts)
-- [Documentation](Documentation)
-- [Templates](Templates)
+- [Installation](#installation)
+- [Tutorials](#tutorials)
+- [Example scripts](#example-scripts)
+- [Documentation](#documentation)
+- [Templates](#templates)
 
 Below, a hypothetical subsidence bowl is displayed in a contour plot, together with two cross sections where individual contributions of gas fields are highlighted:
 
@@ -54,7 +54,7 @@ Calculate subsidence - from pressure grid.py: How to implement data from grids.
 Calculate subsidence - Salt moving rigid basement.py: Run a model where salt subsidence behaves according to the moving rigid basement method ([source](https://www.nlog.nl/sites/default/files/tno_rapport_waddenzee_final_v17092012_public%20version%20-gelakt.pdf))
 
 ## Documentation
-The documentation (available in the folder Documentation) on PySub is split in three parts: a technical manual, an user manual and a case study. In the technical manual the methodology and implementation of the relevant models are explained. In the user manual the input files are extensively described and instructions for entering the variables are given. When appropriate, a range of valid values is given. The case study elaborates on some of the use cases with the aim to show cases the (visualization) capabilities of PySub.
+The documentation (available in the folder Documentation) on PySub is split in three parts: a technical manual, a user manual and a case study. In the technical manual the methodology and implementation of the relevant models are explained. In the user manual the input files are extensively described and instructions for entering the variables are given. When appropriate, a range of valid values is given. The case study elaborates on some of the use cases with the aim to show the (visualization) capabilities of PySub.
 
 ## Templates
 In the templates folder the input excel files are given for certain use cases (as discussed in the user manual).
