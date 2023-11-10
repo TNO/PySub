@@ -63,6 +63,7 @@ COLUMN_TRANSLATOR = {
 
 MODEL_VARIABLES = RESERVOIR_VARIABLES + ["pressures"]
 
+
 ## project_folder functions
 def _write_variable(Model, var, file):
     if Model.hasattr(var):
@@ -121,11 +122,11 @@ def export_contours(
     contour_levels=None,
     epsg=None,
 ):
-    """Save contours as a shapefile in project folder of .
+    """Save contours as a shapefile in project folder.
 
     Parameters
     ----------
-    model : SUbsidenceModel
+    model : SubsidenceModel
     variable : str, optional
         model.grid attribute with at least the dimensions (y, x, reservoir, time). The default is 'subsidence'.
     reservoir : int, str or list of int or str, optional
@@ -137,7 +138,7 @@ def export_contours(
         list, an Exception will occur. The default is -1, the final
         timestep.
     contour_levels : list, float/int, optional
-        The data vlaues to show the contours of. The default is None.
+        The data values to show the contours of. The default is None.
         When None, the contour levels will be based on the data and the
         contour_steps parameter.
 
@@ -151,8 +152,11 @@ def export_contours(
         reservoir_index = _plot_utils.reservoir_entry_to_index(
             model, reservoir
         )
+
         time_labels = model.timesteps[time_index]
-        time_labels = _plot_utils.time_to_legend(time_labels, model)
+        time_labels = [
+            _plot_utils.time_to_legend(i, model)[0] for i in time_index
+        ]
 
         if contour_levels is None:
             levels = model.get_contour_levels(variable=variable)
@@ -1713,7 +1717,6 @@ def import_model_from_json(import_path, _print=True):
 
 
 def import_model_from_excel(import_path, _print=True):
-
     if _print:
         print(f"Loading SubsidenceModel from {import_path}")
 
@@ -2021,7 +2024,6 @@ def get_pressures_from_df(
     elif (
         pressure_development_df.shape[0] == 0
     ):  # sheet pressure development has not been filled in, use pressure start-end
-
         pressures, timesteps = _pressure_from_start_end(
             pressure_start_end_df,
             columns=[
@@ -2920,8 +2922,8 @@ def seperate_models_from_df(
 
     Returns
     -------
-    model_names : TYPE
-        DESCRIPTION.
+    model_names : list, str
+        A lsit with model names.
     dx : float/int
         Distance between grid nodes along the x-axis in m. The default is
         None. Raises exception when None.
