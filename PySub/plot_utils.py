@@ -3985,10 +3985,6 @@ def plot_timeseries(
     mode="coord",
     plot_kwargs={},
 ):
-    plot_kwargs = set_defaults(plot_kwargs, defaults=Model.plot_defaults)
-    fig, ax = plt.subplots()
-    fig.set_size_inches(figsize)
-
     """Plot subsidence timeseries from SubsidenceModel objects.
     
 
@@ -4053,6 +4049,9 @@ def plot_timeseries(
         Matplotlib figure or ax objects to be expanded upon.
 
     """
+    plot_kwargs = set_defaults(plot_kwargs, defaults=Model.plot_defaults)
+    fig, ax = plt.subplots()
+    fig.set_size_inches(figsize)
 
     if mode.lower() != "max":
         if points is None:
