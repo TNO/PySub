@@ -153,7 +153,7 @@ def export_contours(
             "Explicitly define the epsg parameter when exporting contour files."
         )
     if model.project_folder.project_folder is not None:
-        data = model.grid[variable]
+        data = model[variable]
         if "time" in data.coords:
             time_index = _plot_utils.time_entry_to_index(model, time)
             data = data.isel(time=time_index)
@@ -167,6 +167,7 @@ def export_contours(
             )
 
             data = data.isel(reservoir=reservoir_index).sum(dim="reservoir")
+            file_name = f"{variable} countours.shp"
         data = np.array(data).squeeze()
         levels = model.get_contour_levels(
             variable=variable,
