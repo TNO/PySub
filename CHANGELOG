@@ -5,6 +5,16 @@ All notable changes and added or changed example cases added to this project wil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+(1.1.5b) 2023-11-14
+# Added
+Tutorials:
+- Tutorial 1 now also discusses plotting points and observations
+- Tutorial 4 now also discusses the extend of the plot and how to adjust it manually.
+
+# Fixed
+- https://github.com/TNO/PySub/issues/7
+- https://github.com/TNO/PySub/issues/8
+
 (1.1.5) 2023-03-14
 # Changed
 - Functions plotting cross sections no longer also plot the map with the lines
