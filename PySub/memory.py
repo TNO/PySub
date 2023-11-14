@@ -120,6 +120,7 @@ def export_contours(
     reservoir=None,
     time=-1,
     contour_levels=None,
+    contour_steps=0.01,
     epsg=None,
 ):
     """Save contours as a shapefile in project folder.
@@ -141,6 +142,10 @@ def export_contours(
         The data values to show the contours of. The default is None.
         When None, the contour levels will be based on the data and the
         contour_steps parameter.
+    contour_steps : float, optional
+        The step size between the contours. The contour levels set with the
+        start and end paramters can be further controlled with this parameter.
+        The default is 0.01 (1 cm).
 
     """
     if epsg is None:
@@ -148,43 +153,41 @@ def export_contours(
             "Explicitly define the epsg parameter when exporting contour files."
         )
     if model.project_folder.project_folder is not None:
-        time_index = _plot_utils.time_entry_to_index(model, time)
-        reservoir_index = _plot_utils.reservoir_entry_to_index(
-            model, reservoir
+        data = model.grid[variable]
+        if "time" in data.coords:
+            time_index = _plot_utils.time_entry_to_index(model, time)
+            data = data.isel(time=time_index)
+            time_label = [
+                _plot_utils.time_to_legend(i, model)[0] for i in time_index
+            ][0]
+            file_name = f"{variable} countours {time_label}.shp"
+        if "reservoir" in data.coords:
+            reservoir_index = _plot_utils.reservoir_entry_to_index(
+                model, reservoir
+            )
+
+            data = data.isel(reservoir=reservoir_index).sum(dim="reservoir")
+        data = np.array(data).squeeze()
+        levels = model.get_contour_levels(
+            variable=variable,
+            levels=contour_levels,
+            contour_steps=contour_steps,
         )
 
-        time_labels = model.timesteps[time_index]
-        time_labels = [
-            _plot_utils.time_to_legend(i, model)[0] for i in time_index
-        ]
-
-        if contour_levels is None:
-            levels = model.get_contour_levels(variable=variable)
-        else:
-            levels = contour_levels
-
-        for it, t in enumerate(time_index):
-            data = (
-                model[variable]
-                .isel(reservoir=reservoir_index, time=t)
-                .sum(dim="reservoir")
-            )
-            contours = plt.contour(model.X, model.Y, data, levels=levels)
-            file = model.project_folder.output_file(
-                f"contours {time_labels[it]}.shp"
-            )
-            geom = []
-            levels = []
-            for level, col in zip(contours.levels, contours.collections):
-                # Loop through all polygons that have the same intensity level
-                for contour_path in col.get_paths():
-                    # Create the polygon for this intensity level
-                    # The first polygon in the path is the main one, the following ones are "holes"
-                    for cp in contour_path.to_polygons():
-                        geom.append(cp)
-                        levels.append(level)
-            _shape_utils.save_polygon(geom, file, epsg, fields=levels)
-            plt.close()
+        contours = plt.contour(model.X, model.Y, data, levels=levels)
+        file = model.project_folder.output_file(file_name)
+        geom = []
+        levels = []
+        for level, col in zip(contours.levels, contours.collections):
+            # Loop through all polygons that have the same intensity level
+            for contour_path in col.get_paths():
+                # Create the polygon for this intensity level
+                # The first polygon in the path is the main one, the following ones are "holes"
+                for cp in contour_path.to_polygons():
+                    geom.append(cp)
+                    levels.append(level)
+        _shape_utils.save_polygon(geom, file, epsg, fields=levels)
+        plt.close()
     else:
         print(
             "Warning: Model has no project folder assigned. Contours have not been saved."
