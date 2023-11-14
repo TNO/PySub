@@ -3537,7 +3537,7 @@ def add_subsidence_points(
             "Warning: invalid color keyword argument added. Use a list with the length of the points in each model."
         )
 
-    for pi in point_index:
+    for counter, pi in enumerate(point_index):
         values = (
             Model.point_subsidence.isel(reservoir=reservoir)
             .sum(dim="reservoir")
@@ -3549,7 +3549,7 @@ def add_subsidence_points(
             Model.timesteps,
             values,
             c=c[pi],
-            label=label[pi],
+            label=label[counter],
             **adjusted_plot_kwargs,
         )
 
@@ -3986,21 +3986,21 @@ def plot_timeseries(
     plot_kwargs={},
 ):
     """Plot subsidence timeseries from SubsidenceModel objects.
-    
+
 
     Parameters
     ----------
     Model : SubsidenceModel or ModelSuite objects.
     points : list, tuple np.ndarray
         An m x 2 numpy array where m is the amount of points and 2 is the
-        x- and y-coordinate of each point. These points represent locations 
+        x- and y-coordinate of each point. These points represent locations
         at which subsidence will be/is determined.
     reservoir : int, str or list of int or str, optional
-        The index or name of the reservoirs you want to plot. If it is a 
+        The index or name of the reservoirs you want to plot. If it is a
         list, all the reservoirs in that list will be displayed. The default is None.
         When None, all reservoirs will be displayed.
     model : int, str or list of int or str, optional
-        The index or name of the models you want the data to plotted from. If it is a 
+        The index or name of the models you want the data to plotted from. If it is a
         list, all the models in that suite will be displayed. The default is None.
         When None, all models will be displayed.
     unit : str, optional
@@ -4009,16 +4009,16 @@ def plot_timeseries(
     title : str, optional
         The title you want above the figure. The default is None.
     y_axis_exageration_factor : int/float, optional
-        The factor the length of the y_axis will be exagerated. If the lowest data 
+        The factor the length of the y_axis will be exagerated. If the lowest data
         point in the graph is -1, the y-axis will be from -y_axis_exageration_factor
-        to the highest point. The default is 2. 
+        to the highest point. The default is 2.
     ylim : tuple, float, optional
         A tuple of values determinging the extend of the y-axis.The default is None.
-        When None, the y-axis will be determined using the data and 
+        When None, the y-axis will be determined using the data and
         y_axis_exageration_factor.figsize : tuple, int/float, optional
         The size of the figure in inches. The default is (8, 8).
     final : boolean, optional
-        When True, the figure will plot, if false, a fig and ax(s) object will be 
+        When True, the figure will plot, if false, a fig and ax(s) object will be
         returned. The default is True.
     fname : str, optional
         When entered, the plotted figure will be saved under this name.
@@ -4028,16 +4028,16 @@ def plot_timeseries(
         When True, shows a legend, when False, the figure will plot no legend.
         The default is True.
     horizontal_line : float/dict
-        When a float, it must be the value on the y-axis at which the horizontal 
-        line will be placed. When a dict, the key of the dictionary will be the label 
-        of the line and the entry will be the value on the y-axis the horizontal 
+        When a float, it must be the value on the y-axis at which the horizontal
+        line will be placed. When a dict, the key of the dictionary will be the label
+        of the line and the entry will be the value on the y-axis the horizontal
         line will be plotted along.
     mode : str, optional
-        When 'max', the points will be ignored and instead the subsidence at the 
-        location with the most subsidence will be plotted. X and y will be ignored. 
+        When 'max', the points will be ignored and instead the subsidence at the
+        location with the most subsidence will be plotted. X and y will be ignored.
         The default is 'coord', which means points will be used.
     plot_kwargs : dict, optional
-        Dictionary with the keyword arguments for the plotted lines. 
+        Dictionary with the keyword arguments for the plotted lines.
         The default is {}. See SubsidenceModel attribute plot_defaults
         for additional information.
 

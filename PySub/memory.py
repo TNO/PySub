@@ -47,7 +47,7 @@ COLUMN_NAMES = [
     "Compaction coefficient (1/bar)",
     "Knothe angle (°)",
     "Tau (s)",
-    "Reference stress rate (Pa/year)",
+    "Reference stress rate (bar/year)",
     "Reference compaction coefficient (1/bar)",
     "b",
     "Average density above reservoir (kg/m³)",
@@ -1350,7 +1350,7 @@ def import_reservoir_bucket_from_dfs(
         "Compaction coefficient (1/bar)",
         "Knothe angle (°)",
         "Tau (s)",
-        "Reference stress rate (Pa/year)",
+        "Reference stress rate (bar/year)",
         "Reference compaction coefficient (1/bar)",
         "b",
         "Average density above reservoir (kg/m³)",
@@ -2122,7 +2122,7 @@ def get_reservoir_parameters_from_df(reservoir_parameters):
             "Compaction coefficient (1/bar)",
             "Tau (s)",
             "Knothe angle (°)",
-            "Reference stress rate (Pa/year)",
+            "Reference stress rate (bar/year)",
             "Average density above reservoir (kg/m³)",
             "Reference compaction coefficient (1/bar)",
             "b",
@@ -2148,7 +2148,7 @@ def get_reservoir_parameters_from_df(reservoir_parameters):
     tau = _fetch(reservoir_parameters, "Tau (s)")
     knothe_angles = _fetch(reservoir_parameters, "Knothe angle (°)")
     reference_stress_rates = _fetch(
-        reservoir_parameters, "Reference stress rate (Pa/year)"
+        reservoir_parameters, "Reference stress rate (bar/year)"
     )
     density = _fetch(
         reservoir_parameters, "Average density above reservoir (kg/m³)"
@@ -3092,7 +3092,7 @@ def seperate_models_from_df(
         try:
             reference_stress_rates.append(
                 model_reservoir_parameters[
-                    "Reference stress rate (Pa/year)"
+                    "Reference stress rate (bar/year)"
                 ].values
             )
         except:

@@ -60,7 +60,7 @@
             "Allardsoog": 150,
             "Een": 120
         },
-        "Reference stress rate (Pa/year)": {
+        "Reference stress rate (bar/year)": {
             "Norg": 1e-05,
             "Allardsoog": 1e-05,
             "Een": 1e-05

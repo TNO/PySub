@@ -10,10 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Tutorials:
 - Tutorial 1 now also discusses plotting points and observations
 - Tutorial 4 now also discusses the extend of the plot and how to adjust it manually.
+- Tutorial 4 now also discusses the plotting of points on a map
 
 # Fixed
 - https://github.com/TNO/PySub/issues/7
 - https://github.com/TNO/PySub/issues/8
+- https://github.com/TNO/PySub/issues/9
+- https://github.com/TNO/PySub/issues/10
 
 (1.1.5) 2023-03-14
 # Changed
