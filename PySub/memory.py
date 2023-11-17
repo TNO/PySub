@@ -109,7 +109,6 @@ def _move_tree(root_src_dir, root_dst_dir):
                 # in case of the src and dst are the same file
                 if os.path.samefile(src_file, dst_file):
                     continue
-                # os.remove(dst_file)
             shutil.copy(src_file, dst_dir)
 
 
@@ -122,6 +121,7 @@ def export_contours(
     contour_levels=None,
     contour_steps=0.01,
     epsg=None,
+    fname=None,
 ):
     """Save contours as a shapefile in project folder.
 
@@ -129,7 +129,8 @@ def export_contours(
     ----------
     model : SubsidenceModel
     variable : str, optional
-        model.grid attribute with at least the dimensions (y, x, reservoir, time). The default is 'subsidence'.
+        model.grid attribute with at least the dimensions (y, x, reservoir, time).
+        The default is 'subsidence'.
     reservoir : int, str or list of int or str, optional
         The index or name of the reservoirs you want to plot. If it is a
         list, multiple reservoirs will be displayed. The default is None.
@@ -146,6 +147,13 @@ def export_contours(
         The step size between the contours. The contour levels set with the
         start and end paramters can be further controlled with this parameter.
         The default is 0.01 (1 cm).
+    fname : str, optional
+        The name of the file as it will be saved in the project folder.
+        The default is None. When None it will store the name as:
+            {variable} contours {time}.shp.
+        Where time is only incorperated in the file name if it is a parameter
+        of the variable data.
+
 
     """
     if epsg is None:
@@ -161,13 +169,15 @@ def export_contours(
                 _plot_utils.time_to_legend(i, model)[0] for i in time_index
             ][0]
             file_name = f"{variable} countours {time_label}.shp"
+        else:
+            file_name = f"{variable} countours.shp"
         if "reservoir" in data.coords:
             reservoir_index = _plot_utils.reservoir_entry_to_index(
                 model, reservoir
             )
 
             data = data.isel(reservoir=reservoir_index).sum(dim="reservoir")
-            file_name = f"{variable} countours.shp"
+
         data = np.array(data).squeeze()
         levels = model.get_contour_levels(
             variable=variable,
@@ -176,6 +186,7 @@ def export_contours(
         )
 
         contours = plt.contour(model.X, model.Y, data, levels=levels)
+        file_name = fname if not fname is None else file_name
         file = model.project_folder.output_file(file_name)
         geom = []
         levels = []
@@ -183,7 +194,8 @@ def export_contours(
             # Loop through all polygons that have the same intensity level
             for contour_path in col.get_paths():
                 # Create the polygon for this intensity level
-                # The first polygon in the path is the main one, the following ones are "holes"
+                # The first polygon in the path is the main one, the following
+                # ones are "holes"
                 for cp in contour_path.to_polygons():
                     geom.append(cp)
                     levels.append(level)
@@ -518,16 +530,14 @@ def to_netcdf(da, filename, epsg=28992):
     ----------
     da : xr.DataArray
         xarary data array with your variables. must have coordiantes x and y.
-        Tiem optional. other layers are not recommended.
+        Time is optional. Other layers are not recommended.
     filename : str
         Path to the file you want the netcdf to be saved at. Must end with .nc.
     epsg : int, optional
         EPSG code. The default is 28992.
 
     """
-    if "reservoir" in da.coords:
-        # Layers other than time, x and y don't do well
-        da = da.sum("reservoir", drop=True)
+
     crs = f"epsg:{epsg}"
     ds_coords = [i for i in ["time", "y", "x"] if i in da.coords]
     ds_coords = ds_coords + [i for i in da.coords if i not in ds_coords]
@@ -555,6 +565,9 @@ def export_netcdf(model, epsg=28992):
         grid = model.grid
         for name, var in grid.data_vars.items():
             f = os.path.join(model.project_folder.output_file(f"{name}.nc"))
+            if "reservoir" in var.coords:
+                # Layers other than time, x and y don't do well
+                var = var.sum("reservoir", drop=True)
             to_netcdf(var, f, epsg=epsg)
 
 
@@ -1202,7 +1215,7 @@ def import_bucket_ensemble(import_paths):
         compaction in a grid cell is deemed insignificant and is set to 0.
     global_compaction_model : str
         The types of compaction models as defined in
-        PySub.CompactionModels for each reservoir: # TODO: keep updated with added methods
+        PySub.CompactionModels for each reservoir:
             - linear
             - time-decay
             - ratetype
@@ -1604,7 +1617,7 @@ def import_model(import_path):
         the model.
 
         The types of compaction models as defined in
-        PySub.CompactionModels for each reservoir: # TODO: keep updated with added methods
+        PySub.CompactionModels for each reservoir:
             - linear
             - time-decay
             - ratetype
@@ -1637,7 +1650,7 @@ def import_model(import_path):
         method in m. The list must have the same length as the number of reservoirs in
         the model. The default is None. If None, the Geertsama solution will be used.
     poissons_ratios : list, float/int
-        THe Poissons ratio for each reservoir for the van Opstal nucleus of strain
+        The Poissons ratio for each reservoir for the van Opstal nucleus of strain
         method in m. The list must have the same length as the number of reservoirs in
         the model. The default is None. If None, an error will occur.
     reference_stress_rates : list, float/int/str
@@ -2784,7 +2797,7 @@ def import_suite(import_path):
         each model.
 
         The types of compaction models as defined in
-        PySub.CompactionModels for each reservoir: # TODO: keep updated with added methods
+        PySub.CompactionModels for each reservoir:
             - linear
             - time-decay
             - ratetype
@@ -2944,7 +2957,7 @@ def seperate_models_from_df(
         the model.
 
         The types of compaction models as defined in
-        PySub.CompactionModels for each reservoir: # TODO: keep updated with added methods
+        PySub.CompactionModels for each reservoir:
             - linear
             - time-decay
             - ratetype
