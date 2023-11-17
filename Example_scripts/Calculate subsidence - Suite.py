@@ -17,9 +17,6 @@ if __name__ == "__main__":
         all_same_bounds=True,
     )  # They do not have to be the same grids, but you can force it with setting this parameter to True
 
-    Suite.assign_point_parameters()
-    Suite.assign_observation_parameters()
-
     Suite.calculate_compaction()
     Suite.calculate_subsidence()
     plot.plot_overlap_cross_section(Suite, line)
