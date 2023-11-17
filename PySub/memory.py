@@ -187,7 +187,9 @@ def export_contours(
 
         contours = plt.contour(model.X, model.Y, data, levels=levels)
         file_name = fname if not fname is None else file_name
-        file = model.project_folder.output_file(file_name)
+        file = model.project_folder.output_file(
+            os.path.splitext(file_name)[0] + ".shp"
+        )
         geom = []
         levels = []
         for level, col in zip(contours.levels, contours.collections):
