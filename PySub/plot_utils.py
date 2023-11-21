@@ -1378,7 +1378,7 @@ def add_cross_section(
     data,
     line,
     name="_nolegend_",
-    inflection_point_names=None,
+    inflection_point_names="auto",
     c=None,
     num=1000,
     plot_kwargs={},
@@ -1431,6 +1431,9 @@ def add_cross_section(
     if _utils.is_iterable(line):
         line_dict = {}
         if inflection_point_names is None:
+            for i, point in enumerate(line):
+                line_dict[" " * i] = point
+        elif inflection_point_names == "auto":
             for i, point in enumerate(line):
                 line_dict[string.ascii_uppercase[i % 26]] = point
         elif _utils.is_iterable(inflection_point_names):
@@ -2824,7 +2827,7 @@ def plot_cross_section(
             data,
             line_dict.values(),
             name=legend_labels,
-            inflection_point_names=None,
+            inflection_point_names="auto",
             c=c,
             num=num,
             plot_kwargs=adjusted_plot_kwargs,
@@ -2884,7 +2887,6 @@ def plot_cross_section(
                 ]
                 legend_labels = legend_labels + _legend_labels
                 map_title.append(f"Cross section - {_legend_labels[-1]}")
-                # reservoir_index = reservoir_entry_to_index(m, reservoir)
 
                 c, adjusted_plot_kwargs = seperate_colors_from_dict(
                     plot_kwargs, len(steps)
@@ -2909,7 +2911,7 @@ def plot_cross_section(
                     data,
                     line_dict.values(),
                     name=_legend_labels,
-                    inflection_point_names=None,
+                    inflection_point_names="auto" if i == 0 else None,
                     c=c,
                     num=num,
                     plot_kwargs=adjusted_plot_kwargs,
@@ -4663,7 +4665,7 @@ def _individual_m(
                 [data],
                 line_dict.values(),
                 name=[r],
-                inflection_point_names=None,
+                inflection_point_names="auto" if i == 0 else None,
                 c=[c[c_index]],
                 num=num,
                 plot_kwargs=plot_kwargs,
@@ -5079,11 +5081,14 @@ def plot_overlap_cross_section(
 
                 counter += 1
 
+        legend_labels = list(color_dict.keys())
         legend_handles = [
             Line2D([0], [0], color=color_dict[r]) for r in color_dict.keys()
         ]
-        legend_handles += [Line2D([0], [0], color="k")]
-        legend_labels = list(color_dict.keys()) + ["Total"]
+        if mode == "individual":
+            legend_handles += [Line2D([0], [0], color="k")]
+            legend_labels += ["Total"]
+
         if legend:
             fig.legend(
                 legend_handles,
