@@ -1145,7 +1145,7 @@ def excel_to_json(file, sheet_names=[]):
         if len(df.index) != len(np.unique(df.index)):
             df = pd.read_excel(file, sheet_name=sheet, index_col=None)
         json_str = df.to_dict()
-        # json_str = json_str.replace(',', ',\n')
+
         data[sheet] = json_str
     json_string = json.dumps(data, indent=4, default=str)
     with open(json_file, "w") as f:
@@ -1724,6 +1724,7 @@ def import_model_from_json(import_path, _print=True):
     pressure_development_df = dataframes["Pressure development"]
     point_df = dataframes["Points"]
     observations_df = dataframes["Observations"]
+    observations_df = observations_df.set_index("Observation ID")
 
     return import_model_from_dataframes(
         model_parameters,
@@ -1735,10 +1736,7 @@ def import_model_from_json(import_path, _print=True):
     )
 
 
-def import_model_from_excel(import_path, _print=True):
-    if _print:
-        print(f"Loading SubsidenceModel from {import_path}")
-
+def import_model_from_excel(import_path):
     model_parameters = pd.read_excel(
         import_path, sheet_name="Model parameters", index_col=0, header=0
     )
