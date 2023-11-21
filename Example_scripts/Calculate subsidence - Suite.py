@@ -19,8 +19,17 @@ if __name__ == "__main__":
 
     Suite.calculate_compaction()
     Suite.calculate_subsidence()
+    Suite.calculate_subsidence_at_points()
+    Suite.calculate_subsidence_at_observations()
     plot.plot_overlap_cross_section(Suite, line)
     contour_levels = Suite.get_contour_levels()
+
+    plot.plot_subsidence_points(Suite, points=["S235"])
+    plot.plot_subsidence_points(Suite, points=["S146"])
+    plot.plot_subsidence_observations(Suite, observations=["S235"])
+    plot.plot_subsidence_observations(Suite, observations=["S146"])
+    plot.plot_subsidence_observations(Suite)
+
     plot.plot_cross_section(
         Suite,
         line,

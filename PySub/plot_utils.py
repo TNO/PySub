@@ -3737,7 +3737,6 @@ def add_subsidence_at_observation_points(
                 observations_index = [
                     Model.observation_label_to_int(observations)
                 ]
-
             c, adjusted_plot_kwargs = seperate_colors_from_dict(
                 plot_kwargs, len(observations_index)
             )
@@ -3899,15 +3898,16 @@ def plot_subsidence_observations(
         model = Model.model_label_to_index(model)
 
         counter = 0
+        selected_observations = Model.unique_observations(
+            observations=observations
+        )
+        number_of_selected_observations = len(selected_observations)
         c, pre_adjusted_kwargs = seperate_colors_from_dict(
             plot_kwargs,
-            len(
-                np.unique(
-                    Model.unique_observations(observations=observations).names
-                )
-            ),
+            number_of_selected_observations,
         )
         for i, m in enumerate(Model._models):
+
             if i in model:
                 adjusted_plot_kwargs = set_defaults(
                     {"linestyle": _line_style(counter % 10)},
@@ -3916,16 +3916,21 @@ def plot_subsidence_observations(
                 adjusted_plot_kwargs["c"] = c[
                     [
                         i
-                        for i, e in enumerate(
-                            np.unique(Model.unique_observations().names)
-                        )
+                        for i, e in enumerate(selected_observations.names)
                         if e in m.observation_points.names
                     ]
                 ]
+
+                selected_for_model = [
+                    o
+                    for o in selected_observations.names
+                    if o in m.observation_points.names
+                ]
+
                 add_subsidence_at_observation_points(
                     ax,
                     m,
-                    observations=observations,
+                    observations=selected_for_model,
                     reservoir=reservoir,
                     unit=unit,
                     plot_kwargs=adjusted_plot_kwargs,
