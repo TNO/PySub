@@ -215,9 +215,9 @@ def plot_probability_distribution(
         Title of the figure. The default is None.
     final : bool
         When True, the figure will be shown en return immutable. If False,
-        the matplotlib figure and ax(es) objects will be returned. This will 
+        the matplotlib figure and ax(es) objects will be returned. This will
         NOT show the figure, or save it if that is a part of the request.
-        This argument is used to get the matplotlib objects for you to adjust 
+        This argument is used to get the matplotlib objects for you to adjust
         further using metplotlib methods.
     kwargs : keyword arguments, optional
         The keyword arguments for the matplotlib.pyplot.plot
@@ -433,10 +433,6 @@ def get_background(
     else:
         fig = fig
     fig.set_size_inches(figsize)
-    x_ticks = np.array(ax.get_xticks())
-    x_ticks = x_ticks[(x_ticks < extent[0]) & (x_ticks > extent[2])]
-    y_ticks = np.array(ax.get_yticks())
-    y_ticks = y_ticks[(y_ticks < extent[1]) & (y_ticks > extent[3])]
 
     ax.set_xticks(ax.get_xticks(), ccrs.epsg(epsg))
     ax.set_yticks(ax.get_yticks(), ccrs.epsg(epsg))
@@ -446,7 +442,7 @@ def get_background(
     return fig, ax
 
 
-def add_horizontal_line(ax, horizontal_line, unit="cm", label = "_nolabel_"):
+def add_horizontal_line(ax, horizontal_line, unit="cm", label="_nolabel_"):
     """Add a red horizontal line to a plot.
 
     Parameters
@@ -461,9 +457,9 @@ def add_horizontal_line(ax, horizontal_line, unit="cm", label = "_nolabel_"):
     unit : str, optional
         The SI unit the value will need to be converted to. The default is 'cm'.
     label : str, optional
-        The label in the legend.    
+        The label in the legend.
         If the argument "value" is a dictionary this argument is ignored.
-        
+
 
     Returns
     -------
@@ -2371,9 +2367,9 @@ def plot_subsidence(
         Title of the figure. The default is None.
     final : bool
         When True, the figure will be shown en return immutable. If False,
-        the matplotlib figure and ax(es) objects will be returned. This will 
+        the matplotlib figure and ax(es) objects will be returned. This will
         NOT show the figure, or save it if that is a part of the request.
-        This argument is used to get the matplotlib objects for you to adjust 
+        This argument is used to get the matplotlib objects for you to adjust
         further using metplotlib methods.
     fname : str, optional
         When entered, the plotted figure will be saved under this name.
@@ -2675,7 +2671,6 @@ def plot_cross_section(
     colorbar_kwargs={},
     annotation_kwargs={},
 ):
-
     """Plot a map of the cross section in a 2D representation, and
     plot a line or set of lines of the subsidence along that cross section.
 
@@ -2726,9 +2721,9 @@ def plot_cross_section(
         y_axis_exageration_factor.
     final : bool
         When True, the figure will be shown en return immutable. If False,
-        the matplotlib figure and ax(es) objects will be returned. This will 
+        the matplotlib figure and ax(es) objects will be returned. This will
         NOT show the figure, or save it if that is a part of the request.
-        This argument is used to get the matplotlib objects for you to adjust 
+        This argument is used to get the matplotlib objects for you to adjust
         further using metplotlib methods.
     fname : str
         The location the figure will be saved it. The default is '' this, will
@@ -2891,7 +2886,6 @@ def plot_cross_section(
         legend_labels = []
         for i, m in enumerate(Model._models):
             if i in model:
-
                 steps = time_entry_to_index(m, time)
                 data_coords = list(m.grid[variable].coords)
                 if "time" not in data_coords:
@@ -3024,9 +3018,9 @@ def plot_reservoirs(
         The available epsg of the WMTS service
     final : bool
         When True, the figure will be shown en return immutable. If False,
-        the matplotlib figure and ax(es) objects will be returned. This will 
+        the matplotlib figure and ax(es) objects will be returned. This will
         NOT show the figure, or save it if that is a part of the request.
-        This argument is used to get the matplotlib objects for you to adjust 
+        This argument is used to get the matplotlib objects for you to adjust
         further using metplotlib methods.
     fname : str, optional
         When entered, the plotted figure will be saved under this name.
@@ -3241,7 +3235,6 @@ def plot_reservoirs_model(
     )
 
     if annotate:
-
         labels = [
             r for i, r in enumerate(Model.reservoirs) if i in reservoir_index
         ] + list(additional_labels)
@@ -3288,7 +3281,6 @@ def plot_points_on_map(
     annotation_kwargs={},
     scatter_kwargs={},
 ):
-
     """Plot the selected points on map.
 
     Model : SubsidenceModel or ModelSuite objects
@@ -3342,9 +3334,9 @@ def plot_points_on_map(
         remove these notations.
     final : bool
         When True, the figure will be shown en return immutable. If False,
-        the matplotlib figure and ax(es) objects will be returned. This will 
+        the matplotlib figure and ax(es) objects will be returned. This will
         NOT show the figure, or save it if that is a part of the request.
-        This argument is used to get the matplotlib objects for you to adjust 
+        This argument is used to get the matplotlib objects for you to adjust
         further using metplotlib methods.
     fname : str, optional
         When entered, the plotted figure will be saved under this name.
@@ -3527,7 +3519,6 @@ def plot_points_on_map(
 def add_subsidence_points(
     ax, Model, points=None, reservoir=None, unit="cm", plot_kwargs={}
 ):
-
     plot_kwargs = set_defaults(plot_kwargs, defaults=Model.plot_defaults)
 
     reservoir = reservoir_entry_to_index(Model, reservoir)
@@ -3627,9 +3618,9 @@ def plot_subsidence_points(
         The size of the figure in inches. The default is (8, 8).
     final : bool
         When True, the figure will be shown en return immutable. If False,
-        the matplotlib figure and ax(es) objects will be returned. This will 
+        the matplotlib figure and ax(es) objects will be returned. This will
         NOT show the figure, or save it if that is a part of the request.
-        This argument is used to get the matplotlib objects for you to adjust 
+        This argument is used to get the matplotlib objects for you to adjust
         further using metplotlib methods.
     fname : str, optional
         When entered, the plotted figure will be saved under this name.
@@ -3735,7 +3726,6 @@ def plot_subsidence_points(
 def add_subsidence_at_observation_points(
     ax, Model, observations=None, reservoir=None, unit="cm", plot_kwargs={}
 ):
-
     if _utils.isSubsidenceModel(Model):
         if (
             not Model.hasattr("observation_points")
@@ -3860,9 +3850,9 @@ def plot_subsidence_observations(
         The size of the figure in inches. The default is (8, 8).
     final : bool
         When True, the figure will be shown en return immutable. If False,
-        the matplotlib figure and ax(es) objects will be returned. This will 
+        the matplotlib figure and ax(es) objects will be returned. This will
         NOT show the figure, or save it if that is a part of the request.
-        This argument is used to get the matplotlib objects for you to adjust 
+        This argument is used to get the matplotlib objects for you to adjust
         further using metplotlib methods.
     fname : str, optional
         When entered, the plotted figure will be saved under this name.
@@ -3936,7 +3926,6 @@ def plot_subsidence_observations(
             number_of_selected_observations,
         )
         for i, m in enumerate(Model._models):
-
             if i in model:
                 adjusted_plot_kwargs = set_defaults(
                     {"linestyle": _line_style(counter % 10)},
@@ -4053,9 +4042,9 @@ def plot_timeseries(
         The size of the figure in inches. The default is (8, 8).
     final : bool
         When True, the figure will be shown en return immutable. If False,
-        the matplotlib figure and ax(es) objects will be returned. This will 
+        the matplotlib figure and ax(es) objects will be returned. This will
         NOT show the figure, or save it if that is a part of the request.
-        This argument is used to get the matplotlib objects for you to adjust 
+        This argument is used to get the matplotlib objects for you to adjust
         further using metplotlib methods.
     fname : str, optional
         When entered, the plotted figure will be saved under this name.
@@ -4191,7 +4180,6 @@ def plot_timeseries(
                 **adjusted_plot_kwargs,
             )
         if _utils.isSubsidenceSuite(Model):
-
             model = Model.model_label_to_index(model)
             c, adjusted_plot_kwargs = seperate_colors_from_dict(
                 plot_kwargs, Model.number_of_models
@@ -4312,9 +4300,9 @@ def plot_min_mean_max(
         The size of the figure in inches. The default is (8, 8).
     final : bool
         When True, the figure will be shown en return immutable. If False,
-        the matplotlib figure and ax(es) objects will be returned. This will 
+        the matplotlib figure and ax(es) objects will be returned. This will
         NOT show the figure, or save it if that is a part of the request.
-        This argument is used to get the matplotlib objects for you to adjust 
+        This argument is used to get the matplotlib objects for you to adjust
         further using metplotlib methods.
     fname : str, optional
         When entered, the plotted figure will be saved under this name.
@@ -4505,9 +4493,9 @@ def plot_overlap(
         If True, a legend wil appear, if False, not.
     final : bool
         When True, the figure will be shown en return immutable. If False,
-        the matplotlib figure and ax(es) objects will be returned. This will 
+        the matplotlib figure and ax(es) objects will be returned. This will
         NOT show the figure, or save it if that is a part of the request.
-        This argument is used to get the matplotlib objects for you to adjust 
+        This argument is used to get the matplotlib objects for you to adjust
         further using metplotlib methods.
     fname : str, optional
         When entered, the plotted figure will be saved under this name.
@@ -4776,7 +4764,6 @@ def _cumulative_m(
 
         for l in range(len(line_dict) - 1):
             if l == 0:
-
                 ax.axvline(
                     x=inflection_distances[0],
                     c="k",
@@ -4836,7 +4823,6 @@ def plot_overlap_cross_section(
     annotation_kwargs={},
     fill_between_kwargs={},
 ):
-
     """Plot a map of the cross section in a 2D representation, and
     plot a line or set of lines of the subsidence along that cross section.
 
@@ -4897,9 +4883,9 @@ def plot_overlap_cross_section(
         y_axis_exageration_factor.
     final : bool
         When True, the figure will be shown en return immutable. If False,
-        the matplotlib figure and ax(es) objects will be returned. This will 
+        the matplotlib figure and ax(es) objects will be returned. This will
         NOT show the figure, or save it if that is a part of the request.
-        This argument is used to get the matplotlib objects for you to adjust 
+        This argument is used to get the matplotlib objects for you to adjust
         further using metplotlib methods.
     fname : str
         The location the figure will be saved it. The default is '' this, will
@@ -4958,7 +4944,6 @@ def plot_overlap_cross_section(
     unit_label = get_unit_label(variable, unit)
 
     if _utils.isSubsidenceModel(Model):
-
         steps = time_entry_to_index(Model, time)
 
         reservoir_index = reservoir_entry_to_index(Model, reservoir)
@@ -5185,7 +5170,6 @@ def plot_map_with_line(
     annotation_kwargs={},
     fill_between_kwargs={},
 ):
-
     """Plot a map of the cross section in a 2D representation, and
     plot a line or set of lines of the subsidence along that cross section.
 
@@ -5259,9 +5243,9 @@ def plot_map_with_line(
         y_axis_exageration_factor.
     final : bool
         When True, the figure will be shown en return immutable. If False,
-        the matplotlib figure and ax(es) objects will be returned. This will 
+        the matplotlib figure and ax(es) objects will be returned. This will
         NOT show the figure, or save it if that is a part of the request.
-        This argument is used to get the matplotlib objects for you to adjust 
+        This argument is used to get the matplotlib objects for you to adjust
         further using metplotlib methods.
     fname : str
         The location the figure will be saved it. The default is '' this, will
@@ -5328,7 +5312,6 @@ def plot_map_with_line(
             _lines = []
             str_count = _utils.letter_counter()
             for l in lines:
-
                 if not type(l) == dict:
                     line_dict = {}
                     for _, line_segment in enumerate(l):
@@ -5395,7 +5378,6 @@ def plot_map_with_line(
             return m_fig, m_ax
 
     if _utils.isSubsidenceSuite(Model):
-
         m_fig, m_ax = plot_subsidence(
             Model,
             reservoir=reservoir,
