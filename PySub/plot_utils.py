@@ -213,9 +213,12 @@ def plot_probability_distribution(
         The size of the figure in inches. The default is (8, 6).
     title : str, optional
         Title of the figure. The default is None.
-    final : boolean, optional
-        If True, returns None and plot becomes immuteable, If False, returns fig
-        and ax object. The default is True.
+    final : bool
+        When True, the figure will be shown en return immutable. If False,
+        the matplotlib figure and ax(es) objects will be returned. This will 
+        NOT show the figure, or save it if that is a part of the request.
+        This argument is used to get the matplotlib objects for you to adjust 
+        further using metplotlib methods.
     kwargs : keyword arguments, optional
         The keyword arguments for the matplotlib.pyplot.plot
         function. Which keyword arguments are available
@@ -443,7 +446,7 @@ def get_background(
     return fig, ax
 
 
-def add_horizontal_line(ax, horizontal_line, unit="cm"):
+def add_horizontal_line(ax, horizontal_line, unit="cm", label = "_nolabel_"):
     """Add a red horizontal line to a plot.
 
     Parameters
@@ -457,6 +460,10 @@ def add_horizontal_line(ax, horizontal_line, unit="cm"):
         line will be plotted along.
     unit : str, optional
         The SI unit the value will need to be converted to. The default is 'cm'.
+    label : str, optional
+        The label in the legend.    
+        If the argument "value" is a dictionary this argument is ignored.
+        
 
     Returns
     -------
@@ -1938,6 +1945,8 @@ def reservoir_entry_to_index(Model, reservoir):
 
 
 def seperate_colors_from_dict(plot_kwargs, number_of_entries):
+    if not isinstance(plot_kwargs, dict):
+        raise Exception("kwargs must be a dictionary!")
     if "c" in plot_kwargs.keys():
         c = plot_kwargs["c"]
         adjusted_kwargs = plot_kwargs.copy()
@@ -2360,9 +2369,12 @@ def plot_subsidence(
         Also available are 'mm', 'm' and 'km'.
     title : list, str, optional
         Title of the figure. The default is None.
-    final : bool, optional
-        If True, the function ends with a call to plt.show() and the figure
-        is plotted. If False, the function returns a fig and ax object.
+    final : bool
+        When True, the figure will be shown en return immutable. If False,
+        the matplotlib figure and ax(es) objects will be returned. This will 
+        NOT show the figure, or save it if that is a part of the request.
+        This argument is used to get the matplotlib objects for you to adjust 
+        further using metplotlib methods.
     fname : str, optional
         When entered, the plotted figure will be saved under this name.
     shape_kwargs : dict, optional
@@ -2714,7 +2726,10 @@ def plot_cross_section(
         y_axis_exageration_factor.
     final : bool
         When True, the figure will be shown en return immutable. If False,
-        the matplotlib figure and ax(es) objects wqill be returned.
+        the matplotlib figure and ax(es) objects will be returned. This will 
+        NOT show the figure, or save it if that is a part of the request.
+        This argument is used to get the matplotlib objects for you to adjust 
+        further using metplotlib methods.
     fname : str
         The location the figure will be saved it. The default is '' this, will
         indicate the figure will not be stored. When a path is given, this figure
@@ -3007,9 +3022,12 @@ def plot_reservoirs(
         The size of the figure in inches.
     epsg : int, optional
         The available epsg of the WMTS service
-    final : bool, optional
-        If True, the function ends with a call to plt.show() and the figure
-        is plotted. If False, the function returns a fig and ax object.
+    final : bool
+        When True, the figure will be shown en return immutable. If False,
+        the matplotlib figure and ax(es) objects will be returned. This will 
+        NOT show the figure, or save it if that is a part of the request.
+        This argument is used to get the matplotlib objects for you to adjust 
+        further using metplotlib methods.
     fname : str, optional
         When entered, the plotted figure will be saved under this name.
     shape_kwargs : dict, optional
@@ -3322,9 +3340,12 @@ def plot_points_on_map(
         and plot_reservoir_shapes == True, the Reservoirs will be automatically
         annotated with the reservoir names. Set this variable to False to
         remove these notations.
-    final : bool, optional
-        If True, the function ends with a call to plt.show() and the figure
-        is plotted. If False, the function returns a fig and ax object.
+    final : bool
+        When True, the figure will be shown en return immutable. If False,
+        the matplotlib figure and ax(es) objects will be returned. This will 
+        NOT show the figure, or save it if that is a part of the request.
+        This argument is used to get the matplotlib objects for you to adjust 
+        further using metplotlib methods.
     fname : str, optional
         When entered, the plotted figure will be saved under this name.
     svg : bool
@@ -3604,9 +3625,12 @@ def plot_subsidence_points(
         y_axis_exageration_factor.
     figsize : tuple, int/float, optional
         The size of the figure in inches. The default is (8, 8).
-    final : bool, optional
-        If True, the function ends with a call to plt.show() and the figure
-        is plotted. If False, the function returns a fig and ax object.
+    final : bool
+        When True, the figure will be shown en return immutable. If False,
+        the matplotlib figure and ax(es) objects will be returned. This will 
+        NOT show the figure, or save it if that is a part of the request.
+        This argument is used to get the matplotlib objects for you to adjust 
+        further using metplotlib methods.
     fname : str, optional
         When entered, the plotted figure will be saved under this name.
     svg : bool
@@ -3834,9 +3858,12 @@ def plot_subsidence_observations(
         y_axis_exageration_factor.
     figsize : tuple, int/float, optional
         The size of the figure in inches. The default is (8, 8).
-    final : bool, optional
-        If True, the function ends with a call to plt.show() and the figure
-        is plotted. If False, the function returns a fig and ax object.
+    final : bool
+        When True, the figure will be shown en return immutable. If False,
+        the matplotlib figure and ax(es) objects will be returned. This will 
+        NOT show the figure, or save it if that is a part of the request.
+        This argument is used to get the matplotlib objects for you to adjust 
+        further using metplotlib methods.
     fname : str, optional
         When entered, the plotted figure will be saved under this name.
     svg : bool
@@ -4024,9 +4051,12 @@ def plot_timeseries(
         When None, the y-axis will be determined using the data and
         y_axis_exageration_factor.figsize : tuple, int/float, optional
         The size of the figure in inches. The default is (8, 8).
-    final : boolean, optional
-        When True, the figure will plot, if false, a fig and ax(s) object will be
-        returned. The default is True.
+    final : bool
+        When True, the figure will be shown en return immutable. If False,
+        the matplotlib figure and ax(es) objects will be returned. This will 
+        NOT show the figure, or save it if that is a part of the request.
+        This argument is used to get the matplotlib objects for you to adjust 
+        further using metplotlib methods.
     fname : str, optional
         When entered, the plotted figure will be saved under this name.
     svg : bool
@@ -4280,9 +4310,12 @@ def plot_min_mean_max(
         When None, the y-axis will be determined using the data and
         y_axis_exageration_factor.figsize : tuple, int/float, optional
         The size of the figure in inches. The default is (8, 8).
-    final : boolean, optional
-        When True, the figure will plot, if false, a fig and ax(s) object will be
-        returned. The default is True.
+    final : bool
+        When True, the figure will be shown en return immutable. If False,
+        the matplotlib figure and ax(es) objects will be returned. This will 
+        NOT show the figure, or save it if that is a part of the request.
+        This argument is used to get the matplotlib objects for you to adjust 
+        further using metplotlib methods.
     fname : str, optional
         When entered, the plotted figure will be saved under this name.
     svg : bool
@@ -4470,9 +4503,12 @@ def plot_overlap(
         Title of the figure. The default is None.
     legend : boolean, optional
         If True, a legend wil appear, if False, not.
-    final : bool, optional
-        If True, the function ends with a call to plt.show() and the figure
-        is plotted. If False, the function returns a fig and ax object.
+    final : bool
+        When True, the figure will be shown en return immutable. If False,
+        the matplotlib figure and ax(es) objects will be returned. This will 
+        NOT show the figure, or save it if that is a part of the request.
+        This argument is used to get the matplotlib objects for you to adjust 
+        further using metplotlib methods.
     fname : str, optional
         When entered, the plotted figure will be saved under this name.
     shape_kwargs : dict, optional
@@ -4861,7 +4897,10 @@ def plot_overlap_cross_section(
         y_axis_exageration_factor.
     final : bool
         When True, the figure will be shown en return immutable. If False,
-        the matplotlib figure and ax(es) objects wqill be returned.
+        the matplotlib figure and ax(es) objects will be returned. This will 
+        NOT show the figure, or save it if that is a part of the request.
+        This argument is used to get the matplotlib objects for you to adjust 
+        further using metplotlib methods.
     fname : str
         The location the figure will be saved it. The default is '' this, will
         indicate the figure will not be stored. When a path is given, this figure
@@ -5220,7 +5259,10 @@ def plot_map_with_line(
         y_axis_exageration_factor.
     final : bool
         When True, the figure will be shown en return immutable. If False,
-        the matplotlib figure and ax(es) objects wqill be returned.
+        the matplotlib figure and ax(es) objects will be returned. This will 
+        NOT show the figure, or save it if that is a part of the request.
+        This argument is used to get the matplotlib objects for you to adjust 
+        further using metplotlib methods.
     fname : str
         The location the figure will be saved it. The default is '' this, will
         indicate the figure will not be stored. When a path is given, this figure
