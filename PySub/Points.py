@@ -156,14 +156,15 @@ class PointCollection:
                 ]
             else:
                 raise Exception(f"{item} not available in point collection")
-        elif _utils.is_list_of_numbers(item):
-            return [self.collection[i] for i in item]
         elif _utils.is_list_of_strings(item):
             return [
                 self.collection[np.where(np.array(self.names) == i)[0][0]]
                 for i in item
                 if i in self.names
             ]
+        elif _utils.is_list_of_numbers(item):
+            return [self.collection[i] for i in item]
+
         else:
             raise Exception(f"Invalid index type: {type(item)}.")
 
@@ -572,7 +573,7 @@ class ObservationCollection:
 
         Returns
         -------
-        ObservationCollection object.
+        ObservationPoint object.
 
         """
 
@@ -625,7 +626,7 @@ class ObservationCollection:
 
         Returns
         -------
-        Point object
+        ObservationCollection object
 
         """
         if isinstance(item, int) or isinstance(item, slice):
