@@ -934,7 +934,7 @@ def check_df(
                 f"The worksheet {sheet_name} is missing the columns {missing}."
             )
     df.replace(r"^\s*$", np.nan, regex=True, inplace=True)
-    df.replace({pd.NaT: np.NaN}, inplace=True)
+    df.replace({pd.NaT: np.nan}, inplace=True)
     df.dropna(axis=0, how="all", inplace=True)
     if df.shape[0] != 0:
         if no_empty:
