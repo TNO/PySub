@@ -1,5 +1,5 @@
 # PySub
-PySub is a python package with a modelling framework containing tools to predict subsidence caused by mining activities and can make subsidence prognoses, show the results and relevant statistical characteristics. PySub is developed within in the KEM-16 project as an element of a wider toolbox with the aim to model and show how contributions from multiple mining activities be discriminated. No new development of PySub is anticipated.
+PySub is a python package with a modelling framework containing tools to predict subsidence caused by mining activities and can make subsidence prognoses, show the results and relevant statistical characteristics. PySub is developed within in the KEM-16 project as an element of a wider toolbox with the aim to model and show how contributions from multiple mining activities are discriminated. No further development of PySub is anticipated.
 The output consists of overview text files, a variety of figures and stored models. It builds on top of other open source packages: numpy, xarray, pandas, numba, shapely, shapefile, osgeo, pyproj, descartes, matplotlib, cartopy, tqdm, adjustText and scipy.
 In this README the following is covered:
 - [Installation](#installation)
