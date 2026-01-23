@@ -34,11 +34,27 @@ RESERVOIR_VARIABLES = [
     "tau",
     "reference_stress_rates",
     "cmref",
+    "cmref_cm_ratio",
     "b",
     "density",
     "shapes",
+    "cmref_cm_ratio",
 ]
-
+RESERVOIR_VARIABLES_DICT = {
+    "Depth to basement (m)": "depth_to_basements",
+    "Poisson's ratio (-)": "poissons_ratios",
+    "Depth to reservoir (m)": "depths",
+    "Reservoir thickness (m)": "thickness",
+    "Compaction coefficient (1/bar)": "compaction_coefficients",
+    "Reference compaction coefficient / compaction coefficient (-)": "cmref_cm_ratio",
+    "Knothe angle (°)": "knothe_angles",
+    "Tau (s)": "tau",
+    "Reference stress rate (bar/year)": "reference_stress_rates",
+    "Reference compaction coefficient (1/bar)": "cmref",
+    "b": "b",
+    "Average density above reservoir (kg/m³)": "density",
+    "Shapefile location": "shapes",
+}
 COLUMN_NAMES = [
     "Depth to basement (m)",
     "Poisson's ratio (-)",
@@ -52,14 +68,13 @@ COLUMN_NAMES = [
     "b",
     "Average density above reservoir (kg/m³)",
     "Shapefile location",
+    "Reference compaction coefficient / compaction coefficient (-)",
 ]
 
 PARAMETER_TRANSLATOR = {
     par: text for par, text in zip(RESERVOIR_VARIABLES, COLUMN_NAMES)
 }
-COLUMN_TRANSLATOR = {
-    text: par for par, text in zip(RESERVOIR_VARIABLES, COLUMN_NAMES)
-}
+COLUMN_TRANSLATOR = {text: par for par, text in zip(RESERVOIR_VARIABLES, COLUMN_NAMES)}
 
 MODEL_VARIABLES = RESERVOIR_VARIABLES + ["pressures"]
 
@@ -165,16 +180,14 @@ def export_contours(
         if "time" in data.coords:
             time_index = _plot_utils.time_entry_to_index(model, time)
             data = data.isel(time=time_index)
-            time_label = [
-                _plot_utils.time_to_legend(i, model)[0] for i in time_index
-            ][0]
+            time_label = [_plot_utils.time_to_legend(i, model)[0] for i in time_index][
+                0
+            ]
             file_name = f"{variable} countours {time_label}.shp"
         else:
             file_name = f"{variable} countours.shp"
         if "reservoir" in data.coords:
-            reservoir_index = _plot_utils.reservoir_entry_to_index(
-                model, reservoir
-            )
+            reservoir_index = _plot_utils.reservoir_entry_to_index(model, reservoir)
 
             data = data.isel(reservoir=reservoir_index).sum(dim="reservoir")
 
@@ -187,9 +200,7 @@ def export_contours(
 
         contours = plt.contour(model.X, model.Y, data, levels=levels)
         file_name = fname if not fname is None else file_name
-        file = model.project_folder.output_file(
-            os.path.splitext(file_name)[0] + ".shp"
-        )
+        file = model.project_folder.output_file(os.path.splitext(file_name)[0] + ".shp")
         geom = []
         levels = []
         for level, col in zip(contours.levels, contours.collections):
@@ -321,9 +332,7 @@ def report(Model):
                 iy = max_indices["y"].isel(reservoir=r).values
                 x = Model.x[ix]
                 y = Model.y[iy]
-                max_value.append(
-                    subsidence.isel(reservoir=r, x=ix, y=iy).values
-                )
+                max_value.append(subsidence.isel(reservoir=r, x=ix, y=iy).values)
                 xs.append(x)
                 ys.append(y)
             max_value = np.array(max_value)
@@ -335,8 +344,7 @@ def report(Model):
             df["X"] = xs
             df["Y"] = ys
             tupled = [
-                Model.get_max_subsidence(time=t)
-                for t in range(Model.number_of_steps)
+                Model.get_max_subsidence(time=t) for t in range(Model.number_of_steps)
             ]
             max_subsidence, x, y = np.array(
                 [(s, coord[0], coord[1]) for s, coord in tupled]
@@ -389,9 +397,7 @@ def df_to_text_file(file, list_of_df, titles=None):
         raise Exception(
             f"Invalid type {type(list_of_df)}. Must be an iterable with pandas DataFrames or Series."
         )
-    elif not all(
-        [isinstance(df, (pd.DataFrame, pd.Series)) for df in list_of_df]
-    ):
+    elif not all([isinstance(df, (pd.DataFrame, pd.Series)) for df in list_of_df]):
         raise Exception(
             f"Invalid type {type(list_of_df)}. Must be an iterable with pandas DataFrames or Series."
         )
@@ -599,37 +605,27 @@ def export_csv(model, variable="subsidence", reservoirs=None, time=None):
             raise Exception("Variable must be given as a string variable.")
         else:
             if not model.hasattr(variable):
-                print(
-                    f"Warning: Model has no attribute: {variable}. Not exported!"
-                )
+                print(f"Warning: Model has no attribute: {variable}. Not exported!")
                 return
-        reservoir_index = _plot_utils.reservoir_entry_to_index(
-            model, reservoirs
-        )
+        reservoir_index = _plot_utils.reservoir_entry_to_index(model, reservoirs)
         time_index = _plot_utils.time_entry_to_index(model, time)
 
         values = np.array(
             model[variable].isel(reservoir=reservoir_index, time=time_index)
         )
-        columns = _plot_utils.time_to_legend(
-            model.timesteps[time_index], model
-        )
+        columns = _plot_utils.time_to_legend(model.timesteps[time_index], model)
         if model.project_folder.project_folder is not None:
             for r in reservoir_index:
                 fname = model.project_folder.output_file(
                     f"{model.name} {model.reservoirs[r]} {variable}.csv"
                 )
-                export_grid_to_csv(
-                    model.X, model.Y, values[:, :, r], columns, fname
-                )
+                export_grid_to_csv(model.X, model.Y, values[:, :, r], columns, fname)
         else:
             print(
                 f"Warning: Model {model.name} has no project folder set. Nothing exported."
             )
     else:
-        print(
-            f"Warning: {model} is no SubsidenceModel object. Nothing exported."
-        )
+        print(f"Warning: {model} is no SubsidenceModel object. Nothing exported.")
 
 
 def export_ascii(model, variable="subsidence", reservoirs=None, time=None):
@@ -658,13 +654,9 @@ def export_ascii(model, variable="subsidence", reservoirs=None, time=None):
             raise Exception("Variable must be given as a string variable.")
         else:
             if not model.hasattr(variable):
-                print(
-                    f"Warning: Model has no attribute: {variable}. Not exported!"
-                )
+                print(f"Warning: Model has no attribute: {variable}. Not exported!")
                 return
-        reservoir_index = _plot_utils.reservoir_entry_to_index(
-            model, reservoirs
-        )
+        reservoir_index = _plot_utils.reservoir_entry_to_index(model, reservoirs)
         time_index = _plot_utils.time_entry_to_index(model, time)
         if len(time_index) > 1:
             print(
@@ -672,26 +664,20 @@ def export_ascii(model, variable="subsidence", reservoirs=None, time=None):
             )
 
         values = np.array(
-            model[variable].isel(
-                reservoir=reservoir_index, time=time_index[-1]
-            )
+            model[variable].isel(reservoir=reservoir_index, time=time_index[-1])
         )
         if model.project_folder.project_folder is not None:
             for r in reservoir_index:
                 fname = model.project_folder.output_file(
                     f"{model.name} {model.reservoirs[r]} {variable}.csv"
                 )
-                export_grid_to_ascii(
-                    model.X, model.Y, values[:, :, r], model.dx, fname
-                )
+                export_grid_to_ascii(model.X, model.Y, values[:, :, r], model.dx, fname)
         else:
             print(
                 f"Warning: Model {model.name} has no project folder set. Nothing exported."
             )
     else:
-        print(
-            f"Warning: {model} is no SubsidenceModel object. Nothing exported."
-        )
+        print(f"Warning: {model} is no SubsidenceModel object. Nothing exported.")
 
 
 def save(model, path=None):
@@ -806,7 +792,9 @@ def export_tiff(
             if model.timesteps.dtype == np.int64:
                 time_label = f"{model.timesteps[step]}"
             elif np.issubdtype(model.timesteps.dtype, np.datetime64):
-                time_label = f"{np.datetime_as_string(model.timesteps, unit = 'D')[step]}"
+                time_label = (
+                    f"{np.datetime_as_string(model.timesteps, unit = 'D')[step]}"
+                )
             _export_tiff(
                 model,
                 variable,
@@ -826,9 +814,7 @@ def export_tiff(
         )
 
 
-def _export_tiff(
-    model, variable, time, reservoir=None, fname=None, epsg=28992
-):
+def _export_tiff(model, variable, time, reservoir=None, fname=None, epsg=28992):
     output_file = model.project_folder.output_file(fname)
     if output_file is not None:
         coordinates = list(model.grid[variable].coords.keys())
@@ -838,24 +824,18 @@ def _export_tiff(
             return
 
         if "reservoir" in coordinates and "time" in coordinates:
-            reservoir_index = _plot_utils.reservoir_entry_to_index(
-                model, reservoir
-            )
+            reservoir_index = _plot_utils.reservoir_entry_to_index(model, reservoir)
             time_index = _plot_utils.time_entry_to_index(model, time)
             if len(time_index) > 1:
                 raise Exception(
                     f"Enter only one timestep for the variable time. Current entry: {time}."
                 )
-            data = model.grid[variable].isel(
-                reservoir=reservoir_index, time=time_index
-            )
+            data = model.grid[variable].isel(reservoir=reservoir_index, time=time_index)
             if len(reservoir_index) > 1:
                 data = data.sum(dim="reservoir")
             data = data.transpose("x", "y", ...)
         elif "reservoir" in coordinates:
-            reservoir_index = _plot_utils.reservoir_entry_to_index(
-                model, reservoir
-            )
+            reservoir_index = _plot_utils.reservoir_entry_to_index(model, reservoir)
             data = model.grid[variable].isel(reservoir=reservoir_index)
             if len(reservoir_index) > 1:
                 data = data.sum(dim="reservoir")
@@ -902,9 +882,7 @@ def export_all(model, name=None, epsg=28992):
 
     """
     if model.project_folder.project_folder is not None:
-        output_folder = os.path.dirname(
-            model.project_folder.output_file("dummy")
-        )
+        output_folder = os.path.dirname(model.project_folder.output_file("dummy"))
 
         location_smf = os.path.join(output_folder, model.name + ".smf")
         save(model, path=location_smf)
@@ -935,12 +913,8 @@ def export_all(model, name=None, epsg=28992):
 
         try:
             for i, r in enumerate(model.reservoirs):
-                shape_file_location = os.path.join(
-                    output_folder, str(r) + ".shp"
-                )
-                _shape_utils.save_polygon(
-                    model.shapes[i], shape_file_location, epsg
-                )
+                shape_file_location = os.path.join(output_folder, str(r) + ".shp")
+                _shape_utils.save_polygon(model.shapes[i], shape_file_location, epsg)
                 reservoir_df.loc[r, "Shapefile location"] = shape_file_location
         except:
             reservoir_df["Shapefile location"] = ""
@@ -1012,9 +986,7 @@ def export_all(model, name=None, epsg=28992):
                     data = model.grid[data_var].values
 
                     if "reservoir" in coordinates:
-                        total_data = (
-                            model.grid[data_var].sum(dim="reservoir").values
-                        )
+                        total_data = model.grid[data_var].sum(dim="reservoir").values
                         total_fname = os.path.join(
                             output_folder, "total_" + data_var + ".tif"
                         )
@@ -1031,9 +1003,7 @@ def export_all(model, name=None, epsg=28992):
                             )
                     else:
                         fname = os.path.join(output_folder, data_var + ".tif")
-                        _shape_utils.save_raster(
-                            data, x, y, dx, dy, epsg, fname
-                        )
+                        _shape_utils.save_raster(data, x, y, dx, dy, epsg, fname)
                         project_df[f"{data_var}"] = fname
                 elif (
                     len(coordinates) == 2
@@ -1049,26 +1019,18 @@ def export_all(model, name=None, epsg=28992):
                     project_df[f"{data_var}"] = fname
                 elif len(coordinates) == 3:
                     label_coordinate = [
-                        c
-                        for c in coordinates
-                        if c not in ["reservoir", "time"]
+                        c for c in coordinates if c not in ["reservoir", "time"]
                     ][0]
                     labels = model.grid[label_coordinate].values
                     index = [[l] * model.number_of_reservoirs for l in labels]
                     index = _utils.flatten_ragged_lists2D(index)
-                    reservoirs = [
-                        model.grid.reservoir.values
-                    ] * model.number_of_points
+                    reservoirs = [model.grid.reservoir.values] * model.number_of_points
                     reservoirs = _utils.flatten_ragged_lists2D(reservoirs)
                     data = []
                     for i in range(len(index)):
-                        data.append(
-                            model.grid[data_var].loc[index[i], reservoirs[i]]
-                        )
+                        data.append(model.grid[data_var].loc[index[i], reservoirs[i]])
                     data = np.array(data)
-                    data_df = pd.DataFrame(
-                        data, index=index, columns=model.timesteps
-                    )
+                    data_df = pd.DataFrame(data, index=index, columns=model.timesteps)
                     data_df.insert(0, "Reservoir name", reservoirs)
                     fname = os.path.join(output_folder, f"{data_var}.csv")
                     _utils.export_df(data_df, fname)
@@ -1160,9 +1122,7 @@ def json_to_df(json_file, time_columns={}):
     for sheet in data.keys():
         df = pd.DataFrame(data[sheet])
         if sheet in list(time_columns.keys()):
-            convert_columns = [
-                c for c in time_columns[sheet] if c in df.columns
-            ]
+            convert_columns = [c for c in time_columns[sheet] if c in df.columns]
             for col in convert_columns:
                 df[col] = pd.to_datetime(df[col])
         dataframes[sheet] = df
@@ -1282,38 +1242,30 @@ def import_bucket_ensemble(import_paths):
 
         else:
             if dx != global_dx:
-                raise Exception(
-                    "Incompatible cell sizes: {dx} and {global_dx}"
-                )
+                raise Exception(f"Incompatible cell sizes: {dx} and {global_dx}")
             if influence_radius != global_influence_radius:
                 raise Exception(
-                    "Incompatible influence radii: {influence_radius} and {global_influence_radius}"
+                    f"Incompatible influence radii: {influence_radius} and {global_influence_radius}"
                 )
             if compaction_model != global_compaction_model:
                 raise Exception(
-                    "Incompatible compaction models: {compaction_model} and {global_compaction_model}"
+                    f"Incompatible compaction models: {compaction_model} and {global_compaction_model}"
                 )
             if subsidence_model != global_subsidence_model:
                 raise Exception(
-                    "Incompatible subsidence models: {subsidence_model} and {global_subsidence_model}"
+                    f"Incompatible subsidence models: {subsidence_model} and {global_subsidence_model}"
                 )
             if start != global_start:
-                raise Exception(
-                    "Incompatible start times: {start} and {global_start}"
-                )
+                raise Exception(f"Incompatible start times: {start} and {global_start}")
             if end != global_end:
-                raise Exception(
-                    "Incompatible end times: {end} and {global_end}"
-                )
+                raise Exception(f"Incompatible end times: {end} and {global_end}")
             if (timesteps != global_timesteps).any():
                 raise Exception(
-                    "Incompatible end times: {timesteps} and {global_timesteps}"
+                    f"Incompatible end times: {timesteps} and {global_timesteps}"
                 )
 
     for reservoir in buckets:
-        buckets[reservoir].check_probabilities(
-            additional_message=f"{reservoir}:"
-        )
+        buckets[reservoir].check_probabilities(additional_message=f"{reservoir}:")
 
     return (
         buckets,
@@ -1335,6 +1287,29 @@ def import_reservoir_bucket(import_path):
         raise Exception(f"Files with extension {ext} are not supported.")
 
 
+def check_ratio(reservoir_parameters, probability_columns, parameter_columns):
+    check = (
+        ("Compaction coefficient (1/bar)" in reservoir_parameters.columns),
+        ("Reference compaction coefficient (1/bar)" in reservoir_parameters.columns),
+    )
+    if sum(check) == 1:
+        parameter_columns.append(
+            "Reference compaction coefficient / compaction coefficient (-)"
+        )
+        probability_columns.append(
+            "Reference compaction coefficient / compaction coefficient probability (factor)"
+        )
+    if check[0]:
+        parameter_columns.append("Compaction coefficient (1/bar)")
+        probability_columns.append("Compaction coefficient probability (factor)")
+    if check[1]:
+        parameter_columns.append("Reference compaction coefficient (1/bar)")
+        probability_columns.append(
+            "Reference compaction coefficient probability (factor)"
+        )
+    return parameter_columns, probability_columns
+
+
 def import_reservoir_bucket_from_dfs(
     model_parameters,
     reservoir_parameters,
@@ -1348,11 +1323,9 @@ def import_reservoir_bucket_from_dfs(
         "Depth to reservoir probability (factor)",
         "Poisson's ratio probability (factor)",
         "Reservoir thickness probability (factor)",
-        "Compaction coefficient probability (factor)",
         "Knothe angle probability (factor)",
         "Tau probability (factor)",
         "Reference stress rate probability (factor)",
-        "Reference compaction coefficient probability (factor)",
         "b probability (factor)",
         "Average density above reservoir probability (factor)",
         "Shapefile location probability (factor)",
@@ -1362,15 +1335,16 @@ def import_reservoir_bucket_from_dfs(
         "Poisson's ratio (-)",
         "Depth to reservoir (m)",
         "Reservoir thickness (m)",
-        "Compaction coefficient (1/bar)",
         "Knothe angle (°)",
         "Tau (s)",
         "Reference stress rate (bar/year)",
-        "Reference compaction coefficient (1/bar)",
         "b",
         "Average density above reservoir (kg/m³)",
         "Shapefile location",
     ]
+    parameter_columns, probability_columns = check_ratio(
+        reservoir_parameters, probability_columns, parameter_columns
+    )
     (
         dx,
         influence_radius,
@@ -1381,8 +1355,6 @@ def import_reservoir_bucket_from_dfs(
         reservoir_name,
     ) = get_model_parameters_from_df(model_parameters, bucket=True)
 
-    reservoir_dict = _BucketEnsemble.VariableBuckets(variables=MODEL_VARIABLES)
-
     _utils.sort_df(reservoir_parameters, reservoir_probabilities)
     _utils.check_df(
         reservoir_probabilities,
@@ -1392,7 +1364,6 @@ def import_reservoir_bucket_from_dfs(
             "Depth to reservoir probability (factor)",
             "Poisson's ratio probability (factor)",
             "Reservoir thickness probability (factor)",
-            "Compaction coefficient probability (factor)",
             "Shapefile location probability (factor)",
         ],
         no_empty=False,
@@ -1407,7 +1378,6 @@ def import_reservoir_bucket_from_dfs(
             "Shapefile location",
             "Depth to reservoir (m)",
             "Reservoir thickness (m)",
-            "Compaction coefficient (1/bar)",
         ],
         no_empty=False,
     )
@@ -1435,17 +1405,18 @@ def import_reservoir_bucket_from_dfs(
             f"The version(s) {missing} is missing from either the pressure or pressure probability worksheet."
         )
 
+    reservoir_dict = _BucketEnsemble.VariableBuckets(
+        variables=(
+            [RESERVOIR_VARIABLES_DICT[par_col] for par_col in parameter_columns]
+            + ["pressures"]
+        )
+    )
     for v in reservoir_versions:
-        for var, prob_col, par_col in zip(
-            RESERVOIR_VARIABLES, probability_columns, parameter_columns
-        ):
+        for prob_col, par_col in zip(probability_columns, parameter_columns):
+            var = RESERVOIR_VARIABLES_DICT[par_col]
             value = reservoir_parameters.loc[v][par_col]
             probability = reservoir_probabilities.loc[v][prob_col]
-            if (
-                _utils.isnan(value)
-                or _utils.isnan(probability)
-                or (probability == 0)
-            ):
+            if _utils.isnan(value) or _utils.isnan(probability) or (probability == 0):
                 pass
             else:
                 reservoir_dict[var]["Probabilities"].append(probability)
@@ -1762,9 +1733,7 @@ def import_model_from_excel(import_path):
     except:
         pressure_start_end_df = pd.DataFrame()
 
-    point_df = pd.read_excel(
-        import_path, sheet_name="Points", index_col=0, header=0
-    )
+    point_df = pd.read_excel(import_path, sheet_name="Points", index_col=0, header=0)
     observations_df = pd.read_excel(
         import_path, sheet_name="Observations", index_col=0, header=0
     )
@@ -1925,9 +1894,7 @@ def get_model_parameters_from_df(
 
 def _values_from_start_end(pressure_start_end_df, columns=[], exclude=[]):
     pressure_df = pressure_start_end_df
-    _utils.check_df(
-        pressure_df, "Pressure start-end", columns=columns, exclude=exclude
-    )
+    _utils.check_df(pressure_df, "Pressure start-end", columns=columns, exclude=exclude)
 
     start_value = _fetch(pressure_df, "Start pressure (bar)")
     end_value = _fetch(pressure_df, "End pressure (bar)")
@@ -1983,9 +1950,7 @@ def convert_pressure_start_end_to_profile(pressure_start_end_df):
         filled_values.append(_pressures)
         filled_timesteps.append(_timesteps)
 
-    unique_timesteps = np.unique(
-        _utils.flatten_ragged_lists2D(filled_timesteps)
-    )
+    unique_timesteps = np.unique(_utils.flatten_ragged_lists2D(filled_timesteps))
 
     pressures = []
     timesteps = unique_timesteps
@@ -2008,9 +1973,7 @@ def convert_pressure(import_path, sheet_name, export_excel=False):
 
     pressure_df = convert_pressure_start_end_to_profile(pressure_start_end_df)
     if export_excel:
-        write_file = (
-            os.path.splitext(import_path)[0] + "_pressure_profile.xlsx"
-        )
+        write_file = os.path.splitext(import_path)[0] + "_pressure_profile.xlsx"
         pressure_start_end_df.to_excel(
             write_file, sheet_name="Pressure start-end", index=False
         )
@@ -2034,9 +1997,7 @@ def get_pressures_from_df(
             raise Exception(
                 'No pressure data has been entered. Fill either the worksheets "Pressure start-end" or "Pressure development".'
             )
-        pressures, timesteps = _pressures_from_development(
-            pressure_development_df
-        )
+        pressures, timesteps = _pressures_from_development(pressure_development_df)
         reservoir_names = pressure_development_df.index.values
     elif (
         pressure_development_df.shape[0] == 0
@@ -2067,14 +2028,10 @@ def get_pressures_from_df(
             print(
                 """Warning: Values for "Start time" and "End time" are filled in, not using pressure development as profile!"""
             )
-            pressures, timesteps = _pressure_from_start_end(
-                pressure_start_end_df
-            )
+            pressures, timesteps = _pressure_from_start_end(pressure_start_end_df)
             reservoir_names = pressure_start_end_df.index.values
         else:
-            factor, timesteps = _pressures_from_development(
-                pressure_development_df
-            )
+            factor, timesteps = _pressures_from_development(pressure_development_df)
             factor = _utils.normalize(factor, axis=1)
             nan_factor = np.sum(np.isnan(factor))
             if (nan_factor > 0).any():
@@ -2082,8 +2039,7 @@ def get_pressures_from_df(
                     f"The reservoirs {list(pressure_development_df.index[np.where(nan_factor > 0)])} show no pressure change."
                 )
             pressures = (
-                factor * (start_value - end_value)[:, None]
-                + start_value[:, None]
+                factor * (start_value - end_value)[:, None] + start_value[:, None]
             )
             reservoir_names = pressure_start_end_df.index.values
 
@@ -2105,9 +2061,7 @@ def get_pressures_from_df(
         filled_values.append(_pressures)
         filled_timesteps.append(_timesteps)
 
-    unique_timesteps = np.unique(
-        _utils.flatten_ragged_lists2D(filled_timesteps)
-    )
+    unique_timesteps = np.unique(_utils.flatten_ragged_lists2D(filled_timesteps))
 
     pressures = []
     timesteps = unique_timesteps
@@ -2163,12 +2117,8 @@ def get_reservoir_parameters_from_df(reservoir_parameters):
     reference_stress_rates = _fetch(
         reservoir_parameters, "Reference stress rate (bar/year)"
     )
-    density = _fetch(
-        reservoir_parameters, "Average density above reservoir (kg/m³)"
-    )
-    cmref = _fetch(
-        reservoir_parameters, "Reference compaction coefficient (1/bar)"
-    )
+    density = _fetch(reservoir_parameters, "Average density above reservoir (kg/m³)")
+    cmref = _fetch(reservoir_parameters, "Reference compaction coefficient (1/bar)")
     b = _fetch(reservoir_parameters, "b")
     return (
         tau,
@@ -2257,9 +2207,7 @@ def build_model(import_path, name=None, project_folder=None, bounds=None):
         name = os.path.basename(os.path.splitext(import_path)[0])
     else:
         if not isinstance(name, str):
-            raise Exception(
-                f"Invalid entry for Model name {name}. Use a string."
-            )
+            raise Exception(f"Invalid entry for Model name {name}. Use a string.")
     pf = project_folder
     model = _SubsidenceModelGas.SubsidenceModel(name, pf)
     model.set_parameters(
@@ -2324,9 +2272,7 @@ def import_cavern_model_from_excel(import_path, cumulative_volume=False):
         index_col=0,
         header=0,
     )
-    point_df = pd.read_excel(
-        import_path, sheet_name="Points", index_col=0, header=0
-    )
+    point_df = pd.read_excel(import_path, sheet_name="Points", index_col=0, header=0)
     observations_df = pd.read_excel(
         import_path, sheet_name="Observations", index_col=0, header=0
     )
@@ -2403,28 +2349,19 @@ def import_cavern_parameters_from_df(cavern_parameters):
         ["Depth to basement moved (m)", "Viscous tau (s)"]
     ].values.T
 
-    if (
-        np.isnan(depth_to_basements_moved).any()
-        and not np.isnan(viscous_tau).any()
-    ):
+    if np.isnan(depth_to_basements_moved).any() and not np.isnan(viscous_tau).any():
         print(
             'Warning: Column "Depth to basement moved (m)" has not been filled in but is required when the column "Viscous tau (s)" is.'
         )
         print("Warning: No moving rigid basement is used.")
         viscous_tau = None
-    elif (
-        not np.isnan(depth_to_basements_moved).any()
-        and np.isnan(viscous_tau).any()
-    ):
+    elif not np.isnan(depth_to_basements_moved).any() and np.isnan(viscous_tau).any():
         print(
             'Warning: Column "Viscous tau (s)" has not been filled in but is required when the column "Depth to basement moved (m)" is.'
         )
         print("Warning: No moving rigid basement is used.")
         depth_to_basements_moved = None
-    elif (
-        np.isnan(depth_to_basements_moved).any()
-        and np.isnan(viscous_tau).any()
-    ):
+    elif np.isnan(depth_to_basements_moved).any() and np.isnan(viscous_tau).any():
         depth_to_basements_moved = None
         viscous_tau = None
 
@@ -2567,22 +2504,16 @@ def build_cavern_model(
         input_cumulative_volume,
         points,
         observation_points,
-    ) = import_cavern_model_from_excel(
-        import_path, cumulative_volume=cumulative_volume
-    )
+    ) = import_cavern_model_from_excel(import_path, cumulative_volume=cumulative_volume)
 
     print("Building model...")
     if name is None:
         name = os.path.basename(os.path.splitext(import_path)[0])
     else:
         if not isinstance(name, str):
-            raise Exception(
-                f"Invalid entry for Model name {name}. Use a string."
-            )
+            raise Exception(f"Invalid entry for Model name {name}. Use a string.")
 
-    model = _SubsidenceModelCavern.SubsidenceModel(
-        name, project_folder=project_folder
-    )
+    model = _SubsidenceModelCavern.SubsidenceModel(name, project_folder=project_folder)
     model.set_dx(dx)
 
     model.set_influence_radius(influence_radius)
@@ -2657,9 +2588,7 @@ def build_suite(
     """
     if isinstance(import_path, str):
         suite_name = (
-            name
-            if name != None
-            else os.path.basename(os.path.dirname(import_path))
+            name if name != None else os.path.basename(os.path.dirname(import_path))
         )
         pf = (
             project_folder
@@ -2738,17 +2667,14 @@ def build_suite(
         suite = _SubsidenceSuite.ModelSuite(suite_name, project_folder=pf)
         if model_names is None:
             model_names = [
-                os.path.splitext(os.path.basename(path))[0]
-                for path in import_path
+                os.path.splitext(os.path.basename(path))[0] for path in import_path
             ]
         elif not _utils.is_list_of_strings(model_names):
             raise Exception(
                 "Enter a list of names for each model or enter None to have the model take on the name of the imported Excel file."
             )
         elif len(model_names) < 1:
-            raise Exception(
-                "The list with model names requires at least one entry."
-            )
+            raise Exception("The list with model names requires at least one entry.")
         else:
             pass
         list_of_models = []
@@ -2896,10 +2822,7 @@ def import_suite(import_path):
     for i, model_path in enumerate(import_path):
         if i == 0:
             data = [
-                [
-                    os.path.splitext(os.path.basename(path))[0]
-                    for path in import_path
-                ]
+                [os.path.splitext(os.path.basename(path))[0] for path in import_path]
             ]
             model_data = import_model(model_path)
             for j in range(len(model_data)):
@@ -3058,9 +2981,7 @@ def seperate_models_from_df(
 
     for model in model_parameters.index:
         dx.append(model_parameters["Cell size (m)"][model])
-        influence_radius.append(
-            model_parameters["Influence radius (m)"][model]
-        )
+        influence_radius.append(model_parameters["Influence radius (m)"][model])
         compaction_model.append(model_parameters["Compaction model"][model])
         subsidence_model.append(model_parameters["Subsidence model"][model])
 
@@ -3077,36 +2998,26 @@ def seperate_models_from_df(
             )
         except:
             shapefile_paths = None
-        depths.append(
-            model_reservoir_parameters["Depth to reservoir (m)"].values
-        )
+        depths.append(model_reservoir_parameters["Depth to reservoir (m)"].values)
         depth_to_basements.append(
             model_reservoir_parameters["Depth to basement (m)"].values
         )
-        poissons_ratios.append(
-            model_reservoir_parameters["Poisson's ratio (-)"].values
-        )
+        poissons_ratios.append(model_reservoir_parameters["Poisson's ratio (-)"].values)
         compaction_coefficients.append(
             model_reservoir_parameters["Compaction coefficient (1/bar)"].values
         )
-        thickness.append(
-            model_reservoir_parameters["Reservoir thickness (m)"].values
-        )
+        thickness.append(model_reservoir_parameters["Reservoir thickness (m)"].values)
         try:
             tau.append(model_reservoir_parameters["Tau (s)"].values)
         except:
             tau = None
         try:
-            knothe_angles.append(
-                model_reservoir_parameters["Knothe angle (°)"].values
-            )
+            knothe_angles.append(model_reservoir_parameters["Knothe angle (°)"].values)
         except:
             knothe_angles = None
         try:
             reference_stress_rates.append(
-                model_reservoir_parameters[
-                    "Reference stress rate (bar/year)"
-                ].values
+                model_reservoir_parameters["Reference stress rate (bar/year)"].values
             )
         except:
             reference_stress_rates = None
@@ -3189,9 +3100,7 @@ def build_model_from_xarray(xarray, name, project_folder=None):
 
     """
     _xarray = xarray.copy()
-    model = _SubsidenceModelGas.SubsidenceModel(
-        name, project_folder=project_folder
-    )
+    model = _SubsidenceModelGas.SubsidenceModel(name, project_folder=project_folder)
     model.grid = _xarray
     model.nx = len(_xarray.x)
     model.ny = len(_xarray.y)
@@ -3319,7 +3228,5 @@ def load_points(
         point_df = json_to_df(
             import_path,
         )[sheet_name]
-    points = _Points.load_points_from_df(
-        point_df, x_column=x_column, y_column=y_column
-    )
+    points = _Points.load_points_from_df(point_df, x_column=x_column, y_column=y_column)
     return points

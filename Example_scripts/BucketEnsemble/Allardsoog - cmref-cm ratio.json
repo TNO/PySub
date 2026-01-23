@@ -1,13 +1,13 @@
 {
     "Model parameters": {
         "Cell size (m)": {
-            "Allardsoog": 50
+            "Allardsoog": 250
         },
         "Influence radius (m)": {
             "Allardsoog": 7050
         },
         "Compaction model": {
-            "Allardsoog": "linear"
+            "Allardsoog": "ratetype"
         },
         "Subsidence model": {
             "Allardsoog": "nucleus of strain"
@@ -45,7 +45,7 @@
             "Mid": 100,
             "Max": 120
         },
-        "Compaction coefficient (1/bar)": 1.2e-05,
+        "Reference compaction coefficient / compaction coefficient (-)": 3.8,
         "Tau (s)": {
             "Min": NaN,
             "Mid": NaN,
@@ -103,7 +103,7 @@
             "Mid": 0.4,
             "Max": 0.3
         },
-        "Compaction coefficient probability (factor)": {
+        "Reference compaction coefficient / compaction coefficient probability (factor)": {
             "Min": 0.3,
             "Mid": 0.4,
             "Max": 0.3

@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Create models sampled from a distribution entered n buckets.
-"""
+"""Create models sampled from a distribution entered n buckets."""
 import numpy as np
 import xarray as xr
 import pandas as pd
-import random
 from tqdm import tqdm
 import csv
-import os
 from PySub import SubsidenceModelGas as _SubsidenceModelGas
 from PySub import SubsidenceKernel as _SubsidenceKernel
 from PySub import utils as _utils
@@ -91,10 +88,7 @@ class VariableBuckets(dict):
         """
         for key, item in self.items():
             probabilities = item["Probabilities"]
-            if (
-                not np.isclose(np.sum(probabilities), 1)
-                and len(probabilities) > 0
-            ):
+            if not np.isclose(np.sum(probabilities), 1) and len(probabilities) > 0:
                 raise Exception(
                     f"{additional_message}     The sum of the probabilities for the parameter {key} is not 1.\n{probabilities}"
                 )
@@ -128,7 +122,7 @@ class VariableBuckets(dict):
         out = []
         for i, c in enumerate(indices):
             if c <= len(_to_fetch[i]) and len(_to_fetch[i]) != 0:
-                out.append(_to_fetch[i][c])
+                out.append(_to_fetch[i][int(c)])
             else:
                 out.append(None)
         return out
@@ -150,7 +144,7 @@ class VariableBuckets(dict):
         """
         return self.values, self.probabilities
 
-    def sample(self, seed=None):
+    def sample(self, rng=None):
         """For each variable, sample a value stored in its key "Values" based
         on the probability of it being chosen indicated by its key "Probabilities".
 
@@ -158,27 +152,22 @@ class VariableBuckets(dict):
         -------
         list
             A list with the same length as the number of variables. The list contains
-            any type of object stored in the VariableBuckt. If an index exceeds the
+            any type of object stored in the VariableBucket. If an index exceeds the
             length of the list of variables stored under "Values", the list will
             contain None for that index.
 
         """
-        random.seed(seed)
         if not hasattr(self, "cumulative_probabilities"):
             _, probabilities = self.as_list()
             probabilities = _utils.pad_array(probabilities)
             self.cumulative_probabilities = np.cumsum(probabilities, axis=1)
         chosen = np.array(
             [
-                np.searchsorted(
-                    self.cumulative_probabilities[i], random.random()
-                )
+                np.searchsorted(self.cumulative_probabilities[i], rng.random())
                 for i in range(len(self.values))
             ]
         )
-        chosen_dict = {
-            var: choice for var, choice in zip(self.variables, chosen)
-        }
+        chosen_dict = {var: choice for var, choice in zip(self.variables, chosen)}
         return self.fetch(chosen), chosen_dict
 
 
@@ -304,12 +293,8 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
                 bucket["shapes"]["Values"] = _Geometries.fetch(
                     buckets[r]["shapes"]["Values"]
                 )
-                bound_collection += [
-                    g.bounds for g in buckets[r]["shapes"]["Values"]
-                ]
-            bounds = _utils.bounds_from_bounds_collection(
-                np.array(bound_collection)
-            )
+                bound_collection += [g.bounds for g in buckets[r]["shapes"]["Values"]]
+            bounds = _utils.bounds_from_bounds_collection(np.array(bound_collection))
             bounds[0] = bounds[0] - self.influence_radius
             bounds[1] = bounds[1] - self.influence_radius
             bounds[2] = bounds[2] + self.influence_radius
@@ -333,9 +318,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
         value_df = pd.DataFrame(value_dict, index=options)
         value_df.index.name = "Options parameters"
 
-        prob_dict = {
-            var: val for var, val in zip(buckets.variables, probabilities)
-        }
+        prob_dict = {var: val for var, val in zip(buckets.variables, probabilities)}
         prob_dict["Start pressure"] = prob_dict["pressures"]
         prob_dict["End pressure"] = prob_dict["pressures"]
         del prob_dict["pressures"]
@@ -347,7 +330,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
         value_df.to_csv(file_loc, mode="w", sep=";")
         prob_df.to_csv(file_loc, mode="a", sep=";")
 
-    def sample_from_buckets(self, seed=None):
+    def sample_from_buckets(self, rng=None):
         """Sample values for the variables stored in the bucket, based on the probability
         of each variable.
 
@@ -368,12 +351,13 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
         model_vars = []
         parameter_indices = {}
         for reservoir in self._reservoirs:
-            sampled, indices = self._buckets[reservoir].sample(seed=seed)
+            sampled, indices = self._buckets[reservoir].sample(rng=rng)
             model_vars.append(sampled)
             parameter_indices[reservoir] = indices
         model_vars = np.array(model_vars).T
         model_vars_dict = {}
-        for i, var in enumerate(_memory.MODEL_VARIABLES):
+        variables = self._buckets[reservoir].keys()
+        for i, var in enumerate(variables):
             if var != "pressures":
                 model_vars_dict[var] = (
                     model_vars[i]
@@ -392,19 +376,46 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
         for var, val in sampled.items():
             if var == "shapes":
                 self._shapes = val
-            else:
+            elif var != "cmref_cm_ratio":
                 setter = getattr(self, f"set_{var}")
                 setter(val)
         return
 
-    def set_from_samples(self, seed=None):
+    def resolve_ratio(self, sampled):
+        sampled_vars = sampled.keys()
+        has_cmd = "compaction_coefficients" in sampled_vars
+
+        if self.compaction_model_type == "ratetype":
+            has_cmref = "cmref" in sampled_vars
+            has_ratio = "cmref_cm_ratio" in sampled_vars
+
+            if not sum([has_cmd, has_cmref, has_ratio]) >= 2:
+                raise Exception(
+                    "At least two of these variables need to be defined: \n\t- compaction_cofficients\n\t- cmref\n\t- cmref_cm_ratio"
+                )
+            else:
+                if has_cmref and has_ratio:
+                    sampled["compaction_coefficients"] = (
+                        sampled["cmref"] / sampled["cmref_cm_ratio"]
+                    )
+                elif has_cmd and has_ratio:
+                    sampled["cmref"] = (
+                        sampled["compaction_coefficients"] * sampled["cmref_cm_ratio"]
+                    )
+                else:
+                    pass
+
+        return sampled
+
+    def set_from_samples(self, rng=None):
         """Sample from the buckets and set the variables of the model
         as those samples.
         """
         if not self.hasattr("sampled_parameters"):
             self._sampled_parameters = []
-        sampled, indices = self.sample_from_buckets(seed=seed)
-        self._set(sampled)
+        sampled, indices = self.sample_from_buckets(rng=rng)
+        converted_sampled = self.resolve_ratio(sampled)
+        self._set(converted_sampled)
 
         self.set_compaction_model()
         self.mask_reservoirs()
@@ -412,23 +423,18 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
         return sampled, indices
 
     def setup_writer(self, write_file, probability=True):
-        self.csv_writer = csv.writer(
-            write_file, delimiter=";", lineterminator="\n"
-        )
+        self.csv_writer = csv.writer(write_file, delimiter=";", lineterminator="\n")
         columns = np.unique(
-            [
+            np.hstack(
                 [
-                    var
-                    for var in bucket.variables
-                    if len(bucket[var]["Values"]) > 0
+                    [var for var in bucket.variables if len(bucket[var]["Values"]) > 0]
+                    for bucket in self.buckets.values()
                 ]
-                for bucket in self.buckets.values()
-            ]
+            )
         )
+
         columns = [
-            _memory.PARAMETER_TRANSLATOR[var]
-            for var in columns
-            if var != "pressures"
+            _memory.PARAMETER_TRANSLATOR[var] for var in columns if var != "pressures"
         ]
         if probability:
             self._save_columns = (
@@ -455,9 +461,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
             )
         self.csv_writer.writerow(self._save_columns)
 
-    def store_samples(
-        self, i, sampled, indices, max_subsidence, probability=None
-    ):
+    def store_samples(self, i, sampled, indices, max_subsidence, probability=None):
         for r in self.reservoirs:
             r_i = self.reservoir_label_to_int(r)
             store_r = {}
@@ -477,12 +481,12 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
                 elif var == "Pressure profile":
                     store_r[var] = indices[r]["pressures"] + 1
                 else:
-                    translated = _memory.COLUMN_TRANSLATOR[var]
+                    translated = _memory.RESERVOIR_VARIABLES_DICT[var]
 
                     if translated == "shapes":
                         store_r[var] = indices[r][translated] + 1
                     else:
-                        if sampled[translated] is not None:
+                        if sampled.get(translated, None) is not None:
                             store_r[var] = sampled[translated][r_i]
                         else:
                             store_r[var] = None
@@ -495,12 +499,9 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
         if self.project_folder.project_folder is None:
             sampled = self._sampled_parameters[index]
         else:
-            parameter_file = self.project_folder.output_file(
-                "run_parameters.csv"
-            )
+            parameter_file = self.project_folder.output_file("run_parameters.csv")
             parameters = {}
-            with open(parameter_file, encoding="utf8") as f:
-                all_sampled = pd.read_csv(f, sep=";")
+            all_sampled = pd.read_csv(parameter_file, sep=";", encoding="latin1")
             selected = all_sampled[all_sampled["Iteration"] == index]
             selected = selected.set_index("Reservoir")
             read_columns = [
@@ -523,9 +524,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
                         for reservoir in self.reservoirs
                     }
                     parameters["pressures"] = [
-                        self.buckets[reservoir]["pressures"]["Values"][
-                            index - 1
-                        ]
+                        self.buckets[reservoir]["pressures"]["Values"][index - 1]
                         for reservoir, index in indices.items()
                     ]
                 elif var == "Shapefile location":
@@ -538,7 +537,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
                         for reservoir, index in indices.items()
                     ]
                 else:
-                    translated = _memory.COLUMN_TRANSLATOR[var]
+                    translated = _memory.RESERVOIR_VARIABLES_DICT[var]
 
                     if selected.shape[0] == 1:
                         parameters[translated] = list(selected[var].values)
@@ -548,10 +547,10 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
                         ]
             sampled = {
                 key: (parameters[key] if key in parameters.keys() else None)
-                for key in _memory.COLUMN_TRANSLATOR.values()
+                for key in _memory.RESERVOIR_VARIABLES_DICT.values()
             }
             sampled["pressures"] = parameters["pressures"]
-        return sampled
+        return {k: (np.array(v) if v is not None else v) for k, v in sampled.items()}
 
     def set_from_sampled(self, index):
         """Set the model variables to values that have been sampled based on the
@@ -564,11 +563,11 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
             Index of the list self.sampled_parameters.
         """
         sampled = self.retreive_sample(index)
-
-        for var, val in sampled.items():
+        converted_sampled = self.resolve_ratio(sampled)
+        for var, val in converted_sampled.items():
             if var == "shapes":
                 self._shapes = val
-            else:
+            elif var != "cmref_cm_ratio":
                 setter = getattr(self, f"set_{var}")
                 setter(val)
 
@@ -586,9 +585,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
                     indexed.append(i % l[iii])
                 else:
                     forked_possibilities = _utils.non_zero_prod(l[:iii])
-                    indexed.append(
-                        np.int(np.floor(i / forked_possibilities) % l[iii])
-                    )
+                    indexed.append(np.int(np.floor(i / forked_possibilities) % l[iii]))
             return indexed
 
         else:
@@ -607,13 +604,9 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
         available_choises = {}
         for r, reservoir_name in enumerate(self.reservoirs):
             parameter_list = []
-            for i in range(
-                _utils.non_zero_prod(amount_of_options[reservoir_name])
-            ):
+            for i in range(_utils.non_zero_prod(amount_of_options[reservoir_name])):
                 parameter_list.append(
-                    self.move_through_list(
-                        i, amount_of_options[reservoir_name]
-                    )
+                    self.move_through_list(i, amount_of_options[reservoir_name])
                 )
             available_choises[reservoir_name] = parameter_list
 
@@ -650,9 +643,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
 
             choises[reservoir_name] = {
                 var: choice
-                for var, choice in zip(
-                    bucket.variables, choises[reservoir_name]
-                )
+                for var, choice in zip(bucket.variables, choises[reservoir_name])
             }
 
         return values, probabilities, choises
@@ -663,11 +654,8 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
         probabilities_array[probabilities_array == None] = 1
         probabilities = np.prod(probabilities_array)
         run_values = {
-            var: [
-                i_values[reservoir_name][val]
-                for reservoir_name in self.reservoirs
-            ]
-            for val, var in enumerate(_memory.MODEL_VARIABLES)
+            var: [i_values[reservoir_name][val] for reservoir_name in self.reservoirs]
+            for val, var in enumerate(list(choises["Allardsoog"].keys()))
         }
 
         pruned_run_values = {}
@@ -701,17 +689,13 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
         error = []
         if iterations is None:
             # Setup and work in parameter tracking file
-            self.parameter_file = self.project_folder.output_file(
-                "run_parameters.csv"
-            )
+            self.parameter_file = self.project_folder.output_file("run_parameters.csv")
             with open(self.parameter_file, "w") as _:
                 pass  # This creates a new file, but also empties the exisiting
             with open(self.parameter_file, "a") as write_file:
                 self.setup_writer(write_file)
                 if all_timesteps:
-                    with tqdm(
-                        total=total_runs, position=0, leave=True
-                    ) as progress_bar:
+                    with tqdm(total=total_runs, position=0, leave=True) as progress_bar:
                         for i in tqdm(range(total_runs)):
                             (
                                 probability,
@@ -730,9 +714,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
 
                             max_results.append(maximum_subsidence)
                             if self.hasattr("observation_points"):
-                                self.calculate_subsidence_at_observations(
-                                    _print=False
-                                )
+                                self.calculate_subsidence_at_observations(_print=False)
                                 error.append(self.error(method=error_method))
                             self.store_samples(
                                 i,
@@ -743,9 +725,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
                             )
                             progress_bar.update()
                 else:
-                    with tqdm(
-                        total=total_runs, position=0, leave=True
-                    ) as progress_bar:
+                    with tqdm(total=total_runs, position=0, leave=True) as progress_bar:
                         for i in tqdm(range(total_runs)):
                             (
                                 probability,
@@ -829,7 +809,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
             pass
         with open(self.parameter_file, "a") as write_file:
             self.setup_writer(write_file, probability=False)
-
+            rng = np.random.default_rng(seed=seed)
             max_results = []
             error = []
             if all_timesteps:
@@ -838,7 +818,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
                 ) as progress_bar:
                     for i in tqdm(range(number_of_samples)):
                         self._counter = i
-                        parameters, indices = self.set_from_samples(seed=seed)
+                        parameters, indices = self.set_from_samples(rng=rng)
                         self.calculate_compaction(_print=False)
                         if self.hasattr("observation_points"):
                             self.assign_observation_parameters()
@@ -846,9 +826,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
                         maximum_subsidence, (x, y) = self.get_max_subsidence()
                         max_results.append(maximum_subsidence)
                         if self.hasattr("observation_points"):
-                            self.calculate_subsidence_at_observations(
-                                _print=False
-                            )
+                            self.calculate_subsidence_at_observations(_print=False)
                             error.append(self.error(method=error_method))
                         self.store_samples(
                             i,
@@ -864,12 +842,10 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
                 ) as progress_bar:
                     for i in tqdm(range(number_of_samples)):
                         self._counter = i
-                        parameters, indices = self.set_from_samples(seed=seed)
+                        parameters, indices = self.set_from_samples(rng=rng)
                         compaction = self.calc_compaction_final()
                         subsidence = self.calc_subsidence_final(compaction)
-                        maximum_subsidence = -float(
-                            subsidence.sum("reservoir").max()
-                        )
+                        maximum_subsidence = -float(subsidence.sum("reservoir").max())
                         max_results.append(maximum_subsidence)
                         self.store_samples(
                             i,
@@ -917,9 +893,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
 
             return compaction_grid.isel(time=-1)
         if TwoD:
-            raise Exception(
-                "2D data detected, invalid input for BucketEnsemble."
-            )
+            raise Exception("2D data detected, invalid input for BucketEnsemble.")
 
     def calc_subsidence_final(self, compaction):
         """Determine the subsidence in m at the final timestep.
@@ -935,9 +909,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
             The subsidence at the final timestep in m. With the shape (y, x, reservoir).
         """
 
-        kernel = _SubsidenceKernel.InfluenceKernel(
-            self._influence_radius, self._dx
-        )
+        kernel = _SubsidenceKernel.InfluenceKernel(self._influence_radius, self._dx)
 
         if self._subsidence_model_type.lower().startswith("nucleus"):
             kernel.nucleus(self.depths, self.depth_to_basements)

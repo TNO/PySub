@@ -893,7 +893,7 @@ class SubsidenceModel:
 
     @property
     def observation_points(self):
-        """Property : returns the set onbesrvations points as a ObservationCollection
+        """Property : returns the set obesrvation points as a ObservationCollection
         object.
 
         Returns
@@ -1940,7 +1940,7 @@ class SubsidenceModel:
                     self.project_folder.write_to_input(var)
                 else:
                     raise Exception(f"Invalid file: {var}")
-                if var.endswith("tif"):
+                if var.endswith(("tif", ".asc")):
                     loaded_var = self.load_from_raster(var, layer=layer)
 
                 elif var.endswith((".txt", ".csv")):
@@ -1973,7 +1973,7 @@ class SubsidenceModel:
                         self.project_folder.write_to_input(path)
                     else:
                         raise Exception(f"Invalid file: {var}")
-                    if path.endswith(".tif"):
+                    if path.endswith((".tif", ".asc")):
                         loaded_var = self.load_from_raster(path, layer=layer)
                     elif path.endswith((".txt", "csv")):
                         loaded_var = self.load_from_csv(

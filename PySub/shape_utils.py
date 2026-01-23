@@ -279,6 +279,61 @@ def save_raster(data, x, y, dx, dy, epsg, fname, fileformat="GTiff"):
 
 
 def load_raster(fname, layer=None):
+    if fname.endswith(".tif"):
+        return load_tif(fname, layer=layer)
+    elif fname.endswith(".asc"):
+        return load_asc(fname)
+
+
+def load_asc(fname):
+    with open(fname, "r") as file:
+        # Read header information
+        header = {}
+        for _ in range(6):
+            line = file.readline().strip().split()
+            header[line[0].lower()] = float(line[1])
+
+        # Read the data
+        data = np.loadtxt(file)
+
+    # Replace NODATA_value with np.nan
+    data[data == header["nodata_value"]] = np.nan
+
+    shape_x = int(header["ncols"])
+    shape_y = int(header["nrows"])
+    data = data.reshape((shape_y, shape_x))
+    if "xllcorner" in header:
+        x = np.arange(
+            header["xllcorner"],
+            header["xllcorner"] + header["ncols"] * header["cellsize"],
+            header["cellsize"],
+        )
+        y = np.arange(
+            header["yllcorner"],
+            header["yllcorner"] + header["nrows"] * header["cellsize"],
+            header["cellsize"],
+        )[::-1]
+    if "xllcenter" in header:
+        x = np.arange(
+            header["xllcenter"] - header["cellsize"] / 2,
+            header["xllcenter"]
+            + (header["ncols"] - 1 / 2) * header["cellsize"],
+            header["cellsize"],
+        )
+        y = np.arange(
+            header["yllcenter"] - header["cellsize"] / 2,
+            header["yllcenter"]
+            + (header["nrows"] - 1 / 2) * header["cellsize"],
+            header["cellsize"],
+        )[::-1]
+
+    data = np.array([data])
+    data[np.isnan(data)] = 0.0
+
+    return data, x, y, None
+
+
+def load_tif(fname, layer=None):
     """
 
     Parameters
@@ -299,9 +354,6 @@ def load_raster(fname, layer=None):
         The y-cordinates of all raster nodes.
     crs : wkt crs as string
     """
-    # src = rasterio.open(fname)
-    # crs = src.crs.wkt if src.crs is not None else None
-
     src = gdal.Open(fname)
     if src is None:
         raise Exception(f"Can not open file:\n{fname}")

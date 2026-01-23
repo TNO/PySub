@@ -1,7 +1,7 @@
 """Example script for modeling workflow for subsidence. Compares available
 compaction methods."""
 
-#%% import packages used in this example
+# %% import packages used in this example
 from PySub import plot_utils as plot
 from PySub.memory import build_model
 from PySub.SubsidenceSuite import ModelSuite
@@ -10,28 +10,28 @@ line = ((210950, 568010), (220001, 568300.1), (225001, 575300.1))
 if __name__ == "__main__":
     models = []
 
-    #%% Make the linear model
-    import_path = "Input example linear.json"
-    name = "linear"
+    # %% Make the linear model
+    # import_path = "Input example linear.json"
+    # name = "linear"
     project_folder = None
-    Model = build_model(import_path, name=name, project_folder=project_folder)
+    # Model = build_model(import_path, name=name, project_folder=project_folder)
 
-    Model.calculate_compaction()
-    Model.calculate_subsidence()
+    # Model.calculate_compaction()
+    # Model.calculate_subsidence()
 
-    # plot with a different background map
-    plot.plot_subsidence(Model)
-    models.append(Model)
+    # # plot with a different background map
+    # plot.plot_subsidence(Model)
+    # models.append(Model)
 
-    Model.calculate_subsidence_at_points()
-    Model.calculate_subsidence_at_observations()
-    plot.plot_subsidence_points(Model, points=["S146"])
-    plot.plot_subsidence_observations(Model, observations=["00000001"])
+    # Model.calculate_subsidence_at_points()
+    # Model.calculate_subsidence_at_observations()
+    # plot.plot_subsidence_points(Model, points=["S146"])
+    # plot.plot_subsidence_observations(Model, observations=["00000001"])
 
-    plot.plot_overlap_cross_section(Model, line, mode="individual")
-    plot.plot_overlap_cross_section(Model, line, mode="cumulative")
+    # plot.plot_overlap_cross_section(Model, line, mode="individual")
+    # plot.plot_overlap_cross_section(Model, line, mode="cumulative")
 
-    #%% Make the time-decay model
+    # %% Make the time-decay model
     import_path = "Input example time-decay.xlsx"
     name = "time-decay"
     Model = build_model(import_path, name=name, project_folder=project_folder)
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     plot.plot_subsidence(Model)
     models.append(Model)
 
-    #%% Make the ratetype model
+    # %% Make the ratetype model
     import_path = "Input example ratetype.xlsx"
     name = "ratetype"
     Model = build_model(import_path, name=name, project_folder=project_folder)
