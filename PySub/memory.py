@@ -38,7 +38,6 @@ RESERVOIR_VARIABLES = [
     "b",
     "density",
     "shapes",
-    "cmref_cm_ratio",
 ]
 RESERVOIR_VARIABLES_DICT = {
     "Depth to basement (m)": "depth_to_basements",
@@ -65,10 +64,10 @@ COLUMN_NAMES = [
     "Tau (s)",
     "Reference stress rate (bar/year)",
     "Reference compaction coefficient (1/bar)",
+    "Reference compaction coefficient / compaction coefficient (-)",
     "b",
     "Average density above reservoir (kg/m³)",
     "Shapefile location",
-    "Reference compaction coefficient / compaction coefficient (-)",
 ]
 
 PARAMETER_TRANSLATOR = {

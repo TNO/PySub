@@ -564,12 +564,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
         """
         sampled = self.retreive_sample(index)
         converted_sampled = self.resolve_ratio(sampled)
-        for var, val in converted_sampled.items():
-            if var == "shapes":
-                self._shapes = val
-            elif var != "cmref_cm_ratio":
-                setter = getattr(self, f"set_{var}")
-                setter(val)
+        self._set(converted_sampled)
 
         self.set_compaction_model()
         self.mask_reservoirs()
@@ -617,7 +612,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
         for r, reservoir_name in enumerate(self.reservoirs):
             if self.amount_of_runs_per_reservoir[reservoir_name] == 0:
                 raise Exception(
-                    "Invalid amount of possibilities (0) for reservoir must be at least 1."
+                    "Invalid amount of possibilities (0) for reservoir. Must be at least 1."
                 )
 
             if r == 0:
@@ -650,12 +645,19 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
 
     def set_deterministic(self, i):
         i_values, i_probabilities, choises = self.sample_from_deterministic(i)
+        values_dict = {r: dict(zip(choises[r], v)) for r, v in i_values.items()}
         probabilities_array = np.array(list(i_probabilities.values()))
         probabilities_array[probabilities_array == None] = 1
         probabilities = np.prod(probabilities_array)
+        all_variables = np.unique(
+            np.hstack([list(choises[k].keys()) for k in choises.keys()])
+        )
+
         run_values = {
-            var: [i_values[reservoir_name][val] for reservoir_name in self.reservoirs]
-            for val, var in enumerate(list(choises["Allardsoog"].keys()))
+            var: [
+                values_dict[reservoir_name][var] for reservoir_name in self.reservoirs
+            ]
+            for var in all_variables
         }
 
         pruned_run_values = {}
@@ -751,7 +753,7 @@ class BucketEnsemble(_SubsidenceModelGas.SubsidenceModel):
             if not _utils.is_iterable(iterations):
                 iterations = [iterations]
             for i in iterations:
-                probability = self.set_deterministic(i)
+                probability, pruned_run_values, choises = self.set_deterministic(i)
                 probabilities.append(probability)
                 self.calculate_compaction(_print=False)
                 if self.hasattr("observation_points"):

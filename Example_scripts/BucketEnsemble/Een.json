@@ -25,11 +25,7 @@
             "Mid": "../Tutorials/Shapefiles/Een.shp",
             "Max": "../Tutorials/Shapefiles/Een.shp"
         },
-        "Depth to basement (m)": {
-            "Min": 4500,
-            "Mid": 5000,
-            "Max": 5500
-        },
+        "Depth to basement (m)": 5000,
         "Poisson's ratio (-)": {
             "Min": 0.23,
             "Mid": 0.25,
